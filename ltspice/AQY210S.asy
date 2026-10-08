@@ -1,0 +1,77 @@
+Version 4
+SymbolType BLOCK
+LINE Normal -32 48 -32 -48
+LINE Normal -24 0 -40 0
+LINE Normal -23 -16 -40 -16
+LINE Normal -32 0 -23 -16
+LINE Normal -40 -16 -32 0
+LINE Normal 16 -9 16 -40
+LINE Normal 16 40 16 9
+LINE Normal 0 24 0 -24
+LINE Normal 16 -24 0 -24
+LINE Normal 16 24 0 24
+LINE Normal 23 -32 23 -40
+LINE Normal 23 -9 23 -17
+LINE Normal 23 -20 23 -28
+LINE Normal 32 -36 23 -36
+LINE Normal 32 -48 32 -36
+LINE Normal 23 40 23 32
+LINE Normal 23 17 23 9
+LINE Normal 23 28 23 20
+LINE Normal 32 36 23 36
+LINE Normal 32 48 32 36
+LINE Normal 32 -24 23 -24
+LINE Normal 32 24 32 -24
+LINE Normal 23 24 32 24
+LINE Normal 32 -13 23 -13
+LINE Normal 32 13 23 13
+LINE Normal 28 -21 28 -27
+LINE Normal 23 -24 28 -21
+LINE Normal 28 -27 23 -24
+LINE Normal 28 21 23 24
+LINE Normal 23 24 28 27
+LINE Normal 28 27 28 21
+LINE Normal 48 -9 32 -9
+LINE Normal 48 -40 48 -9
+LINE Normal 32 -40 48 -40
+LINE Normal 32 9 48 9
+LINE Normal 48 9 48 40
+LINE Normal 48 40 32 40
+LINE Normal 42 -20 48 -29
+LINE Normal 54 -20 42 -20
+LINE Normal 48 -29 54 -20
+LINE Normal 54 -29 42 -29
+LINE Normal 54 29 42 29
+LINE Normal 54 20 42 20
+LINE Normal 42 20 48 29
+LINE Normal 48 29 54 20
+LINE Normal -9 -18 -21 -7
+LINE Normal -16 -15 -9 -18
+LINE Normal -12 -12 -9 -18
+LINE Normal -16 -15 -12 -12
+LINE Normal -9 -3 -21 8
+LINE Normal -16 0 -9 -3
+LINE Normal -12 3 -9 -3
+LINE Normal -16 0 -12 3
+LINE Normal 64 -48 32 -48
+LINE Normal 64 48 32 48
+LINE Normal -32 -48 -64 -48
+LINE Normal -32 48 -64 48
+RECTANGLE Normal 64 64 -64 -64
+WINDOW 38 2 74 Center 0
+WINDOW 0 -20 -75 Left 0
+SYMATTR SpiceModel AQY210S
+SYMATTR Prefix x
+SYMATTR ModelFile AQY210S_LTspice.lib
+PIN -64 -48 NONE 8
+PINATTR PinName 1
+PINATTR SpiceOrder 1
+PIN -64 48 NONE 8
+PINATTR PinName 2
+PINATTR SpiceOrder 2
+PIN 64 48 NONE 8
+PINATTR PinName 3
+PINATTR SpiceOrder 3
+PIN 64 -48 NONE 8
+PINATTR PinName 4
+PINATTR SpiceOrder 4

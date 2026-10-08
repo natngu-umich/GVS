@@ -1,0 +1,23 @@
+LTspice 26.1.1 for Windows
+Circuit: C:\Users\Nat\Documents\LTspice\GVS\gvs_safety.net
+Start Time: Wed Oct  7 16:05:58 2026
+solver = Normal
+Maximum thread count: 8
+tnom = 27
+temp = 27
+method = modified trap
+trtol = 1
+Direct Newton iteration failed to find operating point.
+Starting Gmin stepping
+Gmin stepping succeeded in finding the operating point.
+
+Total elapsed time: 4.092 seconds.
+Total iterations: 170170
+
+Files loaded:
+C:\Users\Nat\Documents\LTspice\GVS\gvs_safety.net
+C:\Users\Nat\AppData\Local\LTspice\lib\cmp\standard.bjt
+C:\Users\Nat\Documents\LTspice\GVS\ina303a1.lib
+C:\Users\Nat\Documents\LTspice\GVS\opa313.lib
+C:\Users\Nat\Documents\LTspice\GVS\AQY210S_LTspice.lib
+
