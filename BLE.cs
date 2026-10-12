@@ -138,7 +138,7 @@ public class BLE
             Impl.DeviceUpdate res = new Impl.DeviceUpdate();
             List<string> deviceIds = new List<string>();
             Dictionary<string, string> deviceNames = new Dictionary<string, string>();
-            
+
             // UPDATED: ref res instead of out res
             while (Impl.PollDevice(ref res, true) != Impl.ScanStatus.FINISHED)
             {
@@ -150,10 +150,10 @@ public class BLE
                     else
                         deviceNames[res.id] = res.name;
                 }
-                
+
                 if (deviceIds.Contains(res.id) && res.isConnectable)
                     currentScan.Found?.Invoke(res.id, deviceNames[res.id]);
-                
+
                 if (currentScan.cancelled)
                     break;
             }
@@ -164,13 +164,39 @@ public class BLE
         return currentScan;
     }
 
+    public static List<string> ScanAndGetServices(string deviceId)
+    {
+        List<string> found = new List<string>();
+        Impl.ScanServices(deviceId);
+        Impl.Service service = new Impl.Service();
+        // Uses block = true to wait for all services to be returned
+        while (Impl.PollService(out service, true) != Impl.ScanStatus.FINISHED)
+        {
+            found.Add(service.uuid);
+        }
+        return found;
+    }
+
+    public static Dictionary<string, string> ScanAndGetCharacteristics(string deviceId, string serviceId)
+    {
+        Dictionary<string, string> found = new Dictionary<string, string>();
+        Impl.ScanCharacteristics(deviceId, serviceId);
+        Impl.Characteristic c = new Impl.Characteristic();
+        while (Impl.PollCharacteristic(out c, true) != Impl.ScanStatus.FINISHED)
+        {
+            string name = c.userDescription != "no description available" ? c.userDescription : c.uuid;
+            found[name] = c.uuid;
+        }
+        return found;
+    }
+
     public static void RetrieveProfile(string deviceId, string serviceUuid)
     {
         Impl.ScanServices(deviceId);
         Impl.Service service = new Impl.Service();
         while (Impl.PollService(out service, true) != Impl.ScanStatus.FINISHED)
             Debug.Log("service found: " + service.uuid);
-        
+
         Thread.Sleep(200);
         Impl.ScanCharacteristics(deviceId, serviceUuid);
         Impl.Characteristic c = new Impl.Characteristic();
