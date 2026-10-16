@@ -1,0 +1,39 @@
+# ==========================================
+# KiCad Local Settings & Auto-Generated Files
+# ==========================================
+*.kicad_prl
+*-backups/
+*.bck
+*.lck
+*-save.kicad_pcb
+*_autosave*
+fp-info-cache
+*.tmp
+
+# KiCad Intermediate Netlists & Export Logs
+*.net
+*.xml
+*.prm
+*.stat
+
+# ==========================================
+# Local IDE & Extension History
+# ==========================================
+.history/
+.vscode/
+.idea/
+
+# ==========================================
+# OS System Files
+# ==========================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP AQY210S
+D Relay SOP4 350 V AC/DC Solid State Relay SPST-NO (1 Form A) 4-SOP (0.173", 4.40mm)
+K
+F https://industry.panasonic.com/ac/cdn/e/control/relay/photomos/catalog/semi_eng_gu_sop4_1a.pdf
+$ENDCMP
+#
+#End Doc Library
