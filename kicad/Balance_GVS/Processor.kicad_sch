@@ -2960,6 +2960,12 @@
 		(uuid "eacfe7cb-9477-4803-bfc5-3d7c5ceb9b7c")
 	)
 	(junction
+		(at 123.19 176.53)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f82a9e05-b23f-415e-8d2e-027d4e4c60e3")
+	)
+	(junction
 		(at 104.14 182.88)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3120,6 +3126,16 @@
 			(type default)
 		)
 		(uuid "40adb93a-6d23-4f82-9d0b-69077e173579")
+	)
+	(wire
+		(pts
+			(xy 123.19 173.99) (xy 123.19 176.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "41ed5613-4547-44c7-93a3-0236e21692a3")
 	)
 	(wire
 		(pts
@@ -3303,6 +3319,16 @@
 	)
 	(wire
 		(pts
+			(xy 123.19 163.83) (xy 123.19 166.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "67a7bf4d-f1e0-41e4-9f8e-b138d528fbf4")
+	)
+	(wire
+		(pts
 			(xy 38.1 182.88) (xy 38.1 177.8)
 		)
 		(stroke
@@ -3393,6 +3419,16 @@
 	)
 	(wire
 		(pts
+			(xy 123.19 186.69) (xy 123.19 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "81448037-ea57-47df-9649-74859453758f")
+	)
+	(wire
+		(pts
 			(xy 166.37 119.38) (xy 166.37 124.46)
 		)
 		(stroke
@@ -3423,6 +3459,16 @@
 	)
 	(wire
 		(pts
+			(xy 62.23 110.49) (xy 77.47 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8c92dce1-7c4b-48f0-86b1-461cf42034bb")
+	)
+	(wire
+		(pts
 			(xy 82.55 177.8) (xy 85.09 177.8)
 		)
 		(stroke
@@ -3450,6 +3496,16 @@
 			(type default)
 		)
 		(uuid "935890df-14c6-4870-a624-9afd797e02c9")
+	)
+	(wire
+		(pts
+			(xy 120.65 163.83) (xy 123.19 163.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9453d6d6-1e1c-4e2e-bd43-3cf6c5d94b1a")
 	)
 	(wire
 		(pts
@@ -3590,6 +3646,16 @@
 			(type default)
 		)
 		(uuid "bd61c434-2fdf-45d3-9f7e-418ffa60022c")
+	)
+	(wire
+		(pts
+			(xy 123.19 176.53) (xy 139.7 176.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bf6fae97-c7ff-4d4e-b583-cef846ee9ba6")
 	)
 	(wire
 		(pts
@@ -3783,6 +3849,16 @@
 	)
 	(wire
 		(pts
+			(xy 123.19 176.53) (xy 123.19 179.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f06dfd43-0199-43c5-b030-906a52aa7362")
+	)
+	(wire
+		(pts
 			(xy 137.16 39.37) (xy 137.16 55.88)
 		)
 		(stroke
@@ -3911,6 +3987,16 @@
 		)
 		(uuid "a5b23c16-f93f-4c8b-87cb-44a441e8eb04")
 	)
+	(label "Battery_ADC"
+		(at 127 176.53 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "aa5d895a-106c-498e-92fe-b4196f57ff89")
+	)
 	(label "SDA1"
 		(at 149.86 121.92 0)
 		(effects
@@ -3930,6 +4016,16 @@
 			(justify left bottom)
 		)
 		(uuid "d6225b83-431b-471d-93b1-63ab5059d382")
+	)
+	(label "Battery_ADC"
+		(at 64.77 110.49 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e6b92560-e3c0-45b0-8c5c-bcf9f4c8524b")
 	)
 	(label "TXD0"
 		(at 66.04 62.23 0)
@@ -3962,6 +4058,30 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+	)
+	(global_label "Battery_Voltage"
+		(shape input)
+		(at 120.65 163.83 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8856213c-2f9f-4aa7-a068-64ca3f0f6119")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 102.9693 163.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 			)
 		)
 	)
@@ -4682,6 +4802,88 @@
 	)
 	(symbol
 		(lib_id "Device:R")
+		(at 123.19 170.18 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2e9f564a-a41f-4ef3-9ebf-6738096f9c7a")
+		(property "Reference" "R33"
+			(at 125.73 168.9099 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10K"
+			(at 125.73 171.4499 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 121.412 170.18 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 123.19 170.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 123.19 170.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fdad821b-158d-4781-bc21-927e96186459")
+		)
+		(pin "2"
+			(uuid "d0e9fcc7-d9af-4219-b5d9-4a9e75ddc059")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "R33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
 		(at 38.1 168.91 0)
 		(mirror y)
 		(unit 1)
@@ -4997,6 +5199,88 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "#PWR040")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 123.19 182.88 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "436bc2f4-68f6-4e7b-b709-d3ad10c46e66")
+		(property "Reference" "R34"
+			(at 125.73 181.6099 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10K"
+			(at 125.73 184.1499 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 121.412 182.88 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 123.19 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 123.19 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5b233596-ee3f-4e50-aa5e-91ca712d9ee0")
+		)
+		(pin "2"
+			(uuid "66723275-008f-4be7-8283-5a4ad22b6ad1")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "R34")
 					(unit 1)
 				)
 			)
@@ -6491,6 +6775,85 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "#PWR039")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 123.19 190.5 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a4b8e0ef-73de-4ecc-b32f-4db0815a26e2")
+		(property "Reference" "#PWR067"
+			(at 123.19 196.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 123.19 195.58 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 123.19 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 123.19 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 123.19 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7e139bd4-2bf4-45a7-9cbe-24b8d0e08016")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "#PWR067")
 					(unit 1)
 				)
 			)

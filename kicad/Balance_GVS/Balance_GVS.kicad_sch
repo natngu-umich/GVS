@@ -175,16 +175,6 @@
 				(justify left top)
 			)
 		)
-		(pin "ESP_LDO_INPUT" output
-			(at 175.26 121.92 180)
-			(uuid "43515e8a-9eea-4593-8d2e-9ea9702e9fd5")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
 		(pin "Howland_Supply_Rail" output
 			(at 175.26 135.89 180)
 			(uuid "dfe1f721-1fc6-4578-9fb2-f8671c6962b8")
