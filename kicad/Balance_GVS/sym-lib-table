@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "OPA4313IPWR") (type "KiCad") (uri "${KIPRJMOD}/OPA4313IPWR/KiCADv6/2026-10-22_03-31-37.kicad_sym") (options "") (descr ""))
+)
