@@ -1,36 +1,53 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
 public class GVSController : MonoBehaviour
 {
     [Header("Tracking Target")]
-    [Tooltip("Drag the Vehicle or VR Camera Rig here. Defaults to this GameObject if empty.")]
+    [Tooltip("Leave empty to track the GameObject this script is attached to, or drag a target here.")]
     public Transform targetTransform;
     private Rigidbody targetRb;
 
     [Header("BLE Configuration")]
-    public string deviceId = ""; // Populate from your Demo UI or hardcode your ESP32 ID
+    
+    [Tooltip("Advertised BLE name of your ESP32 (e.g., 'ESP32-Brocoli'). Used to auto-find deviceId if deviceId is blank.")]
+    public string targetDeviceName = "ESP32";
+    
+    [Tooltip("Windows BLE Device ID (e.g., BluetoothLE#...). Leave blank to auto-scan by targetDeviceName.")]
+    public string deviceId = "";
     public string serviceUuid = "19b10000-e8f2-537e-4f6c-d104768a1214";
     public string characteristicUuid = "19b10001-e8f2-537e-4f6c-d104768a1214";
-    public float sendRateHz = 20f; // 20 Hz (every 50ms) prevents flooding the Windows BLE stack
+
+    [Tooltip("Target transmission rate in Hz (100 Hz = 10ms intervals).")]
+    [Range(10f, 120f)] public float sendRateHz = 100f;
+    
+    [Tooltip("Only enable if your ESP32 characteristic also sends Notify packets back to Unity.")]
+    public bool subscribeToNotifications = false;
 
     [Header("GVS Motion Mapping (Roll Axis)")]
     [Tooltip("Minimum lateral acceleration (m/s^2) before GVS activates.")]
     public float accelDeadzone = 0.5f;
-    [Tooltip("Lateral acceleration (m/s^2) that maps to maximum GVS amplitude.")]
+    [Tooltip("Lateral acceleration (m/s^2) that maps to maximum GVS current.")]
     public float maxExpectedAccel = 15.0f;
-    [Tooltip("Low-pass filter smoothing (higher = more responsive, lower = smoother).")]
-    [Range(1f, 30f)] public float smoothingSpeed = 10f;
+    [Tooltip("Enable low-pass filtering to remove single-frame collision spikes.")]
+    public bool useSmoothing = true;
+    [Tooltip("Filter speed (50 = ~20ms response time for 100Hz tracking).")]
+    [Range(5f, 100f)] public float smoothingSpeed = 50f;
+    [Tooltip("Flip left/right direction bit if electrode polarity is reversed.")]
+    public bool invertDirection = false;
 
     [Header("Hardware Limits")]
     [Tooltip("Maximum safe current amplitude in microamps (e.g., 3000 uA = 3.0 mA).")]
     public int maxAmplitudeMicroAmps = 3000;
-    public int defaultFrequencyMHz = 0; // 0 for DC step/ramp, or set AC frequency in mHz
+    public int defaultFrequencyMHz = 0;
 
     [Header("Debug Telemetry (Read-Only)")]
     public float rawLateralAccel;
     public float smoothedLateralAccel;
+    public int currentOutputAmplitude;
+    public byte currentOutputDirection;
     public bool isBleReady = false;
 
     // Command Opcodes
@@ -44,25 +61,52 @@ public class GVSController : MonoBehaviour
         public byte command;     // 0 = STOP, 1 = START, 2 = DATA (1 byte)
         public byte direction;   // 1 = Left-to-Right (+Roll), 0 = Right-to-Left (-Roll) (1 byte)
         public int frequency;    // mHz (4 bytes, Little-Endian)
-        public int amplitude;    // uA or DAC code (4 bytes, Little-Endian)
+        public int amplitude;    // uA (4 bytes, Little-Endian)
 
-        public byte[] ToByteArray()
+        // Zero-allocation serialization into a pre-allocated 10-byte buffer
+        public void WriteToBuffer(byte[] buf)
         {
-            byte[] buf = new byte[10];
             buf[0] = command;
             buf[1] = direction;
-            Buffer.BlockCopy(BitConverter.GetBytes(frequency), 0, buf, 2, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(amplitude), 0, buf, 6, 4);
-            return buf;
+
+            buf[2] = (byte)(frequency & 0xFF);
+            buf[3] = (byte)((frequency >> 8) & 0xFF);
+            buf[4] = (byte)((frequency >> 16) & 0xFF);
+            buf[5] = (byte)((frequency >> 24) & 0xFF);
+
+            buf[6] = (byte)(amplitude & 0xFF);
+            buf[7] = (byte)((amplitude >> 8) & 0xFF);
+            buf[8] = (byte)((amplitude >> 16) & 0xFF);
+            buf[9] = (byte)((amplitude >> 24) & 0xFF);
         }
     }
 
     // Internal state
     private BLE ble;
+    private BLE.BLEScan activeScan;
+    private Thread bleWorkerThread;
+    private readonly byte[] txBuffer = new byte[10];
+
     private Vector3 lastWorldPosition;
     private Vector3 lastWorldVelocity;
-    private bool isFirstPhysicsTick = true;
+    private int warmupTicks = 0; // Requires 2 ticks to seed position -> velocity -> acceleration cleanly
     private float nextBleSendTime = 0f;
+
+    private volatile bool bleConnectedInternal = false;
+    private volatile bool pendingStartPacket = false;
+
+    void Awake()
+    {
+        // Ensure Unity's FixedUpdate runs fast enough to support 100 Hz sampling
+        if (sendRateHz > 50f)
+        {
+            float targetFixedDt = 1f / sendRateHz;
+            if (Time.fixedDeltaTime > targetFixedDt)
+            {
+                Time.fixedDeltaTime = targetFixedDt;
+            }
+        }
+    }
 
     void Start()
     {
@@ -70,18 +114,36 @@ public class GVSController : MonoBehaviour
             targetTransform = this.transform;
 
         targetRb = targetTransform.GetComponentInParent<Rigidbody>();
+        ResetKinematicsState();
 
-        lastWorldPosition = targetTransform.position;
-        lastWorldVelocity = (targetRb != null) ? targetRb.velocity : Vector3.zero;
-
-        if (!string.IsNullOrEmpty(deviceId))
+        // Auto-connect if a device ID or target device name is configured
+        if (!string.IsNullOrEmpty(deviceId) || !string.IsNullOrEmpty(targetDeviceName))
         {
             InitComm(deviceId, serviceUuid, characteristicUuid);
         }
     }
 
+    public void ResetKinematicsState()
+    {
+        warmupTicks = 0;
+        rawLateralAccel = 0f;
+        smoothedLateralAccel = 0f;
+        if (targetTransform != null)
+        {
+            lastWorldPosition = targetTransform.position;
+            lastWorldVelocity = HasActiveRigidbody()
+                ? targetRb.GetPointVelocity(targetTransform.position)
+                : Vector3.zero;
+        }
+    }
+
+    private bool HasActiveRigidbody()
+    {
+        return targetRb != null && !targetRb.isKinematic;
+    }
+
     /// <summary>
-    /// Call this from Start() or from your Demo UI once a device is selected.
+    /// Initializes BLE connection. Works with an explicit Windows deviceId OR auto-scans for targetDeviceName.
     /// </summary>
     public void InitComm(string devId, string servUuid, string charUuid)
     {
@@ -89,79 +151,191 @@ public class GVSController : MonoBehaviour
         serviceUuid = servUuid;
         characteristicUuid = charUuid;
 
-        ble = new BLE();
+        if (ble == null) ble = new BLE();
 
-        // Connect on a background thread so Unity doesn't freeze during GATT resolution
-        new Thread(() =>
-        {
-            try
-            {
-                bool connected = ble.Connect(deviceId, serviceUuid, new string[] { characteristicUuid });
-                if (connected)
-                {
-                    isBleReady = true;
-                    StartStream();
-                    Debug.Log("[GVS] BLE Connected and Stream Started.");
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("[GVS] BLE Connection Failed: " + e.Message);
-            }
-        })
-        { IsBackground = true }.Start();
+        bleWorkerThread = new Thread(BleConnectionRoutine) { IsBackground = true };
+        bleWorkerThread.Start();
     }
 
-    public bool StartStream()
+    private void BleConnectionRoutine()
     {
-        if (!isBleReady) return false;
-        GVSPacket startPkt = new GVSPacket
+        try
         {
-            command = CMD_START,
-            direction = 0,
-            frequency = 0,
-            amplitude = 0
-        };
-        return SendVRMovementData(startPkt);
+            // Step 1: If no Windows deviceId was given, scan and find it by targetDeviceName
+            if (string.IsNullOrEmpty(deviceId))
+            {
+                Debug.Log("[GVS] Scanning for BLE device matching name: " + targetDeviceName);
+                AutoResetEvent foundSignal = new AutoResetEvent(false);
+                string discoveredId = null;
+
+                activeScan = BLE.ScanDevices();
+                activeScan.Found = (id, name) =>
+                {
+                    if (!string.IsNullOrEmpty(name) &&
+                        name.IndexOf(targetDeviceName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        discoveredId = id;
+                        activeScan.Cancel();
+                        foundSignal.Set();
+                    }
+                };
+
+                // Wait up to 10 seconds to find the ESP32
+                foundSignal.WaitOne(10000);
+                if (activeScan != null) activeScan.Cancel();
+
+                if (string.IsNullOrEmpty(discoveredId))
+                {
+                    Debug.LogError("[GVS] Could not find BLE device named: " + targetDeviceName);
+                    return;
+                }
+
+                deviceId = discoveredId;
+                Debug.Log("[GVS] Found target device! ID: " + deviceId);
+                Thread.Sleep(200); // Allow scan thread to close cleanly
+            }
+
+            // Step 2: Scan Services and match UUID (handles curly braces {} and case differences automatically)
+            List<string> services = BLE.ScanAndGetServices(deviceId);
+            string matchedService = MatchUuid(serviceUuid, services);
+            if (string.IsNullOrEmpty(matchedService))
+            {
+                Debug.LogError("[GVS] Service UUID not found on device. Searched for: " + serviceUuid);
+                return;
+            }
+            serviceUuid = matchedService;
+
+            // Step 3: Scan Characteristics and match UUID (populates BleWinrtDll internal cache for WritePackage)
+            Dictionary<string, string> charMap = BLE.ScanAndGetCharacteristics(deviceId, serviceUuid);
+            string matchedChar = MatchUuid(characteristicUuid, charMap.Values);
+            if (string.IsNullOrEmpty(matchedChar))
+            {
+                Debug.LogError("[GVS] Characteristic UUID not found in service. Searched for: " + characteristicUuid);
+                return;
+            }
+            characteristicUuid = matchedChar;
+
+            // Step 4: Optional Subscribe (skipped by default so Write-only characteristics don't fail)
+            if (subscribeToNotifications)
+            {
+                bool subOk = BLE.Subscribe(deviceId, serviceUuid, new string[] { characteristicUuid });
+                if (!subOk)
+                    Debug.LogWarning("[GVS] Subscribe returned false (characteristic may be Write-only). Continuing with Write mode.");
+            }
+
+            ble.isConnected = true;
+            pendingStartPacket = true;
+            bleConnectedInternal = true;
+            Debug.Log($"[GVS] BLE Ready! Service: {serviceUuid} | Characteristic: {characteristicUuid}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[GVS] BLE initialization exception: " + e.Message);
+        }
     }
 
+    private static string CleanUuid(string uuid)
+    {
+        return string.IsNullOrEmpty(uuid) ? "" : uuid.Trim().Trim('{', '}').ToLowerInvariant();
+    }
+
+    private static string MatchUuid(string target, IEnumerable<string> candidates)
+    {
+        string cleanTarget = CleanUuid(target);
+        foreach (string c in candidates)
+        {
+            if (CleanUuid(c) == cleanTarget)
+                return c; // Return the exact string format WinRT expects
+        }
+        return null;
+    }
+
+    // Physics-driven objects (non-kinematic Rigidbody) are sampled in FixedUpdate at 100 Hz
     void FixedUpdate()
     {
         if (targetTransform == null) return;
+        if (targetRb == null) targetRb = targetTransform.GetComponentInParent<Rigidbody>();
 
-        float dt = Time.fixedDeltaTime;
-        if (dt <= 0f) return;
+        if (HasActiveRigidbody())
+        {
+            // GetPointVelocity includes angular velocity (w x r) if placed on a child seat/camera
+            Vector3 currentVel = targetRb.GetPointVelocity(targetTransform.position);
+            StepKinematicsAndTransmit(currentVel, Time.fixedDeltaTime);
+        }
+    }
 
-        // 1. Sample current World Velocity (works with or without a Rigidbody)
-        Vector3 currentWorldVelocity = (targetRb != null && !targetRb.isKinematic)
-            ? targetRb.velocity
-            : (targetTransform.position - lastWorldPosition) / dt;
+    // Transform-driven objects (no Rigidbody or kinematic Rigidbody) are sampled in LateUpdate
+    // after all Update() movement and VR tracking finishes for the current frame.
+    void LateUpdate()
+    {
+        if (targetTransform == null) return;
 
-        lastWorldPosition = targetTransform.position;
+        if (!HasActiveRigidbody())
+        {
+            float dt = Time.deltaTime;
+            if (dt <= 1e-6f) return;
 
-        if (isFirstPhysicsTick)
+            if (warmupTicks == 0)
+            {
+                lastWorldPosition = targetTransform.position;
+                warmupTicks = 1;
+                return;
+            }
+
+            Vector3 currentVel = (targetTransform.position - lastWorldPosition) / dt;
+            lastWorldPosition = targetTransform.position;
+
+            StepKinematicsAndTransmit(currentVel, dt);
+        }
+    }
+
+    private void StepKinematicsAndTransmit(Vector3 currentWorldVelocity, float dt)
+    {
+        if (dt <= 1e-6f) return;
+
+        isBleReady = bleConnectedInternal;
+
+        // Seed velocity on the first valid velocity tick to prevent startup impulse spikes
+        if (warmupTicks < 2)
         {
             lastWorldVelocity = currentWorldVelocity;
-            isFirstPhysicsTick = false;
+            warmupTicks = 2;
             return;
         }
 
-        // 2. Compute World Acceleration (captures both linear and centripetal turning forces)
+        // 1. Compute World Acceleration vector (captures both linear and centripetal cornering acceleration)
         Vector3 worldAcceleration = (currentWorldVelocity - lastWorldVelocity) / dt;
         lastWorldVelocity = currentWorldVelocity;
 
-        // 3. Project onto the target's Local X-axis (Right vector) for lateral/roll stimulation
+        // 2. Project onto target's local Right axis (+X)
         rawLateralAccel = Vector3.Dot(worldAcceleration, targetTransform.right);
 
-        // 4. Low-pass filter to remove physics jitter
-        smoothedLateralAccel = Mathf.Lerp(smoothedLateralAccel, rawLateralAccel, smoothingSpeed * dt);
-
-        // 5. Rate-limited BLE transmission
-        if (isBleReady && Time.time >= nextBleSendTime)
+        // 3. Frame-rate-independent exponential low-pass filter
+        if (useSmoothing)
         {
-            nextBleSendTime = Time.time + (1f / sendRateHz);
-            GVSPacket dataPkt = ProcessMovement(smoothedLateralAccel);
-            SendVRMovementData(dataPkt);
+            float alpha = 1f - Mathf.Exp(-smoothingSpeed * dt);
+            smoothedLateralAccel = Mathf.Lerp(smoothedLateralAccel, rawLateralAccel, alpha);
+        }
+        else
+        {
+            smoothedLateralAccel = rawLateralAccel;
+        }
+
+        // 4. Rate-limited 100 Hz BLE transmission (dispatched solely from Unity main thread)
+        if (bleConnectedInternal)
+        {
+            if (pendingStartPacket)
+            {
+                pendingStartPacket = false;
+                StartStream();
+            }
+
+            if (Time.unscaledTime >= nextBleSendTime)
+            {
+                nextBleSendTime = Time.unscaledTime + (1f / sendRateHz);
+                GVSPacket pkt = ProcessMovement(smoothedLateralAccel);
+                SendVRMovementData(pkt);
+            }
         }
     }
 
@@ -169,9 +343,10 @@ public class GVSController : MonoBehaviour
     {
         float absAccel = Mathf.Abs(lateralAccel);
 
-        // Apply deadzone so straight-line driving outputs 0 uA
         if (absAccel < accelDeadzone)
         {
+            currentOutputAmplitude = 0;
+            currentOutputDirection = 0;
             return new GVSPacket
             {
                 command = CMD_DATA,
@@ -181,56 +356,77 @@ public class GVSController : MonoBehaviour
             };
         }
 
-        // Normalize acceleration between [accelDeadzone, maxExpectedAccel] -> [0.0, 1.0]
         float normalized = Mathf.InverseLerp(accelDeadzone, maxExpectedAccel, absAccel);
-        int targetAmplitude = Mathf.RoundToInt(normalized * maxAmplitudeMicroAmps);
+        int targetAmplitude = Mathf.Clamp(Mathf.RoundToInt(normalized * maxAmplitudeMicroAmps), 0, maxAmplitudeMicroAmps);
+
+        bool isRightward = lateralAccel > 0f;
+        if (invertDirection) isRightward = !isRightward;
+
+        byte dirBit = (byte)(isRightward ? 1 : 0);
+
+        currentOutputAmplitude = targetAmplitude;
+        currentOutputDirection = dirBit;
 
         return new GVSPacket
         {
             command = CMD_DATA,
-            direction = (byte)(lateralAccel > 0f ? 1 : 0), // 1 = Rightward (+X), 0 = Leftward (-X)
+            direction = dirBit,
             frequency = defaultFrequencyMHz,
             amplitude = targetAmplitude
         };
     }
 
-    public bool SendVRMovementData(GVSPacket data)
+    public bool StartStream()
     {
-        if (!isBleReady || string.IsNullOrEmpty(deviceId)) return false;
-
-        try
+        if (!bleConnectedInternal) return false;
+        return SendVRMovementData(new GVSPacket
         {
-            byte[] payload = data.ToByteArray();
-            return BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, payload);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("[GVS] Write failed: " + e.Message);
-            return false;
-        }
+            command = CMD_START,
+            direction = 0,
+            frequency = 0,
+            amplitude = 0
+        });
     }
 
     public bool EndStream()
     {
-        if (!isBleReady) return false;
-        GVSPacket stopPkt = new GVSPacket
+        if (!bleConnectedInternal) return false;
+        return SendVRMovementData(new GVSPacket
         {
             command = CMD_STOP,
             direction = 0,
             frequency = 0,
             amplitude = 0
-        };
-        return SendVRMovementData(stopPkt);
+        });
+    }
+
+    public bool SendVRMovementData(GVSPacket data)
+    {
+        if (!bleConnectedInternal || string.IsNullOrEmpty(deviceId)) return false;
+
+        try
+        {
+            data.WriteToBuffer(txBuffer);
+            return BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, txBuffer);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[GVS] BLE Write failed: " + e.Message);
+            return false;
+        }
     }
 
     void OnApplicationQuit()
     {
-        // Always zero out current before closing the BLE link
-        if (isBleReady)
+        if (activeScan != null) activeScan.Cancel();
+
+        if (bleConnectedInternal)
         {
             EndStream();
-            Thread.Sleep(50); // Brief pause so WinRT flushes the STOP packet
+            bleConnectedInternal = false;
+            Thread.Sleep(50); // Allow WinRT to flush the 0 uA STOP packet before closing
         }
+
         if (ble != null)
         {
             ble.Close();
