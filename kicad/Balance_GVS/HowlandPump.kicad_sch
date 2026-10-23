@@ -918,6 +918,16 @@
 	)
 	(wire
 		(pts
+			(xy 130.81 76.2) (xy 129.54 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dd4773fb-9545-4d46-9555-7d42c02c1e46")
+	)
+	(wire
+		(pts
 			(xy 156.21 81.28) (xy 161.29 81.28)
 		)
 		(stroke
@@ -1241,7 +1251,7 @@
 		)
 	)
 	(global_label "24V"
-		(shape input)
+		(shape output)
 		(at 137.16 73.66 0)
 		(fields_autoplaced yes)
 		(effects
@@ -1319,7 +1329,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 143.51 150.368 90)
 			(hide yes)
 			(show_name no)
@@ -1398,7 +1408,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 158.75 96.012 90)
 			(hide yes)
 			(show_name no)
@@ -1477,7 +1487,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 57.658 128.27 90)
 			(hide yes)
 			(show_name no)
@@ -1728,7 +1738,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 131.318 91.44 90)
 			(hide yes)
 			(show_name no)
@@ -1807,7 +1817,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 147.32 83.058 90)
 			(hide yes)
 			(show_name no)
@@ -1857,7 +1867,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 129.54 76.2 90)
+		(at 130.81 76.2 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1868,7 +1878,7 @@
 		(fields_autoplaced yes)
 		(uuid "53d11761-39dc-4a37-b892-601cb0c9161f")
 		(property "Reference" "#PWR01"
-			(at 135.89 76.2 0)
+			(at 137.16 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1879,7 +1889,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 133.35 76.1999 90)
+			(at 134.62 76.1999 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1890,7 +1900,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 129.54 76.2 0)
+			(at 130.81 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1901,7 +1911,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 129.54 76.2 0)
+			(at 130.81 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1912,7 +1922,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 129.54 76.2 0)
+			(at 130.81 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1965,7 +1975,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 133.858 140.97 90)
 			(hide yes)
 			(show_name no)
@@ -2046,7 +2056,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 69.342 90.17 90)
 			(hide yes)
 			(show_name no)
@@ -2376,7 +2386,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 57.658 139.7 90)
 			(hide yes)
 			(show_name no)
@@ -2455,7 +2465,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 165.1 83.058 90)
 			(hide yes)
 			(show_name no)
@@ -2612,7 +2622,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 146.05 96.012 90)
 			(hide yes)
 			(show_name no)
@@ -2691,7 +2701,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
 			(at 83.82 102.108 90)
 			(hide yes)
 			(show_name no)
