@@ -2384,7 +2384,17 @@
 	)
 	(wire
 		(pts
-			(xy 237.49 86.36) (xy 245.11 86.36)
+			(xy 248.92 86.36) (xy 248.92 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "200b1b2c-d8e6-4db0-8236-9261b7de6fb2")
+	)
+	(wire
+		(pts
+			(xy 238.76 90.17) (xy 246.38 90.17)
 		)
 		(stroke
 			(width 0)
@@ -2604,6 +2614,16 @@
 	)
 	(wire
 		(pts
+			(xy 237.49 86.36) (xy 248.92 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "701f550a-4a7b-4c6e-b209-1f01659f3bae")
+	)
+	(wire
+		(pts
 			(xy 193.04 88.9) (xy 209.55 88.9)
 		)
 		(stroke
@@ -2761,6 +2781,16 @@
 			(type default)
 		)
 		(uuid "82ddb1df-2c5c-4c53-ac69-6c10b6edc0f9")
+	)
+	(wire
+		(pts
+			(xy 237.49 88.9) (xy 238.76 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "83800047-b983-4ef8-9f44-0546f5c1374d")
 	)
 	(wire
 		(pts
@@ -2944,7 +2974,7 @@
 	)
 	(wire
 		(pts
-			(xy 252.73 86.36) (xy 261.62 86.36)
+			(xy 254 90.17) (xy 262.89 90.17)
 		)
 		(stroke
 			(width 0)
@@ -3001,6 +3031,16 @@
 			(type default)
 		)
 		(uuid "d9f685fe-4f86-475d-9f7e-25ba1b59328f")
+	)
+	(wire
+		(pts
+			(xy 238.76 88.9) (xy 238.76 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e0708909-8875-4c1d-9f76-a7a67706ca93")
 	)
 	(wire
 		(pts
@@ -3084,16 +3124,6 @@
 	)
 	(wire
 		(pts
-			(xy 237.49 88.9) (xy 237.49 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f428617b-94be-437f-a2b6-ed995c081dea")
-	)
-	(wire
-		(pts
 			(xy 33.02 119.38) (xy 33.02 124.46)
 		)
 		(stroke
@@ -3101,16 +3131,6 @@
 			(type default)
 		)
 		(uuid "f4d472f7-7a1a-4649-9eb5-d3817df3bca7")
-	)
-	(wire
-		(pts
-			(xy 237.49 91.44) (xy 246.38 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fc4ef7f2-c601-43e5-91ef-8f3e7708a1c0")
 	)
 	(wire
 		(pts
@@ -3153,7 +3173,7 @@
 		(uuid "2673e874-4c0c-4941-9027-5e7cb6d311b1")
 	)
 	(label "INP"
-		(at 257.81 86.36 180)
+		(at 259.08 90.17 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3181,16 +3201,6 @@
 			(justify left bottom)
 		)
 		(uuid "8eeef083-eb05-4924-9f3b-18788e58c93a")
-	)
-	(label "1.65V"
-		(at 62.23 167.64 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "964210f0-3caf-4be6-970c-cd5a57c02551")
 	)
 	(label "LIMIT2"
 		(at 137.16 172.72 0)
@@ -3243,7 +3253,7 @@
 		(uuid "b525f60e-e55b-4bce-96f0-5571bf34bd1e")
 	)
 	(label "INN"
-		(at 242.57 86.36 180)
+		(at 243.84 90.17 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3282,37 +3292,101 @@
 		)
 		(uuid "d76135a5-06df-4161-8438-067762b20582")
 	)
-	(label "1.65V"
-		(at 50.8 81.28 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "f361fa9a-af60-4358-a61e-2a012f1083c5")
-	)
-	(hierarchical_label "Electrode+"
-		(shape output)
-		(at 246.38 91.44 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "086e00da-2861-42f0-9ec7-f38c37cf2c63")
-	)
-	(hierarchical_label "Safety_Input"
+	(global_label "1.65V"
 		(shape input)
-		(at 261.62 86.36 0)
+		(at 55.88 167.64 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "2373e7d4-7909-4e1a-968c-768d3e84ea89")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 47.5729 167.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "Safety-"
+		(shape bidirectional)
+		(at 262.89 90.17 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left)
 		)
-		(uuid "4a55aa5d-529f-4aa7-b875-f2d2cd82cd74")
+		(uuid "5ec68d01-9f14-429f-920d-29bc40bfbe6b")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 274.425 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(global_label "Safety+"
+		(shape bidirectional)
+		(at 248.92 85.09 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "acd2346a-659f-4064-b1fa-d841dc1a8d16")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 260.455 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(global_label "1.65V"
+		(shape output)
+		(at 50.8 81.28 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "af0fde1d-464c-402e-98bc-48bd65c1f17e")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 59.1071 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Switch:SW_Push")
@@ -4247,7 +4321,7 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 248.92 86.36 90)
+		(at 250.19 90.17 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4255,10 +4329,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "2ba83ba2-67de-42eb-8e6e-a90a73d4cfe3")
 		(property "Reference" "R10"
-			(at 248.92 80.01 90)
+			(at 250.19 93.472 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4268,7 +4341,7 @@
 			)
 		)
 		(property "Value" "11.8"
-			(at 248.92 82.55 90)
+			(at 250.19 96.012 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4278,7 +4351,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 248.92 88.138 90)
+			(at 250.19 91.948 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4289,7 +4362,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 248.92 86.36 0)
+			(at 250.19 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4300,7 +4373,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 248.92 86.36 0)
+			(at 250.19 90.17 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6658,7 +6731,7 @@
 				)
 			)
 		)
-		(property "Footprint" "PW14_TEX"
+		(property "Footprint" "OPA4313IPWR_footprints:PW14_TEX"
 			(at 69.85 157.48 0)
 			(hide yes)
 			(show_name no)

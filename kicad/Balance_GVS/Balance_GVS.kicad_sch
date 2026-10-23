@@ -5,36 +5,6 @@
 	(uuid "fe65ed2a-e0ad-4542-81bb-0c202b789e4d")
 	(paper "A4")
 	(lib_symbols)
-	(wire
-		(pts
-			(xy 135.89 119.38) (xy 151.13 119.38)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "74dea2f1-6053-4252-afac-81e66ae9a2d5")
-	)
-	(wire
-		(pts
-			(xy 151.13 119.38) (xy 151.13 44.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9920b5f1-1bcf-493e-b141-f3bd61e7f179")
-	)
-	(wire
-		(pts
-			(xy 151.13 44.45) (xy 173.99 44.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c7d9e756-87e0-44be-90aa-ba5638822d3d")
-	)
 	(sheet
 		(at 173.99 22.86)
 		(size 77.47 57.15)
@@ -71,16 +41,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left top)
-			)
-		)
-		(pin "Pump_Output" output
-			(at 173.99 44.45 180)
-			(uuid "7f4bd4eb-0879-49fb-b6a7-142fcb0e820c")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 			)
 		)
 		(instances
@@ -175,16 +135,6 @@
 				(justify left top)
 			)
 		)
-		(pin "Howland_Supply_Rail" output
-			(at 175.26 135.89 180)
-			(uuid "dfe1f721-1fc6-4578-9fb2-f8671c6962b8")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
 		(instances
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d"
@@ -229,26 +179,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left top)
-			)
-		)
-		(pin "Safety_Input" input
-			(at 135.89 119.38 0)
-			(uuid "b379bed8-6598-43b9-a8a9-59b5ce346cf5")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(pin "Electrode+" output
-			(at 135.89 137.16 0)
-			(uuid "df38732e-5420-4ef9-b356-edc43a24cb2f")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
 			)
 		)
 		(instances

@@ -4038,7 +4038,7 @@
 		(uuid "f872e3dd-b28c-4d92-b9f4-9b35d9dddb87")
 	)
 	(global_label "DAC_OUT"
-		(shape input)
+		(shape output)
 		(at 153.67 63.5 0)
 		(fields_autoplaced yes)
 		(effects
