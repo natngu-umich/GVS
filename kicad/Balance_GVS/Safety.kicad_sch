@@ -5261,7 +5261,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1k"
+		(property "Value" "300"
 			(at 195.58 71.12 0)
 			(show_name no)
 			(do_not_autoplace no)
