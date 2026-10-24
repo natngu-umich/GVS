@@ -1,0 +1,33 @@
+******
+* Spice Model
+* Item: CMJ3500
+* Date: 2/23/26
+* Revision History: B
+*==========================================================
+* This model was developed by: 
+* Central Semiconductor, LLC.
+* 145 Adams Avenue
+* Hauppauge, NY 11788
+*
+* These models are subject to change without notice.
+* Users may not directly or indirectly re-sell or 
+* re-distribute this model. This model may not 
+* be modified, or altered without the consent of Central Semiconductor, LLC. 
+*
+* For more information on this model contact
+* Central Semiconductor, LLC. at:
+* (631) 435-1110 or https://aeminc.com/en/contact-us
+*
+*==========================================================
+*********
+*SRC=CMJ3500;CMJ3500;Diodes;JFET Regulator;100V 3.55mA
+*SYM=CRDIODE
+*$
+.SUBCKT CMJ3500 1     2
+*Connections    Anode Cathode 
+JFET 1 2 2 CMJ3500J 
+.MODEL CMJ3500J NJF VTO=-4.45 BETA=.262M LAMBDA=0.1M 
++ IS=100.58F PB=0.8 FC=.5 RS=165 RD=2.5 CGS=1.57P CGD=6.78P BETATCE=-0.47
+.ENDS
+*********
+*$

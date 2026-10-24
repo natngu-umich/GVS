@@ -1,15 +1,15 @@
 LTspice 26.1.1 for Windows
 Circuit: C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\combined_analog.net
-Start Time: Fri Oct 23 15:32:50 2026
-solver = Normal
+Start Time: Sat Oct 24 05:43:04 2026
+solver = Alternate
 Maximum thread count: 8
 tnom = 27
 temp = 27
 method = modified trap
 trtol = 1
 Direct Newton iteration succeeded in finding operating point.
-Total elapsed time: 1.850 seconds.
-Total iterations: 22177
+Total elapsed time: 16.676 seconds.
+Total iterations: 56116
 
 Files loaded:
 C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\combined_analog.net
@@ -18,5 +18,7 @@ C:\Users\Nat\AppData\Local\LTspice\lib\cmp\standard.bjt
 C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\ina303a1.lib
 C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\opa313.lib
 C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\AQY210S_LTspice.lib
+C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\BAS40.prm
+C:\Users\Nat\Documents\Arduino\GVS\GVS2\ltspice\CMJ3500.LIB
 C:\Users\Nat\AppData\Local\LTspice\lib\sub\LT1013.sub
 
