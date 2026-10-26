@@ -41,16 +41,9 @@ public class CarController : MonoBehaviour
 
     // Takes the acceleration paddle is mapped from 0-1 so the acceleration is % of max torque
     public void accelerating(float pedalAmount){
-        if(Input.GetButtonDown("XRI_Right_PrimaryButton")){
-            isReversed = !isReversed;
-        }
         float torqueProduced = maxAccelTorqueN*pedalAmount;
         if(isReversed){
             torqueProduced *= -1f;
-            stateText.text = "R";
-        }
-        else{
-            stateText.text = "F";
         }
         foreach(wheel axle in axles){
             if(axle.motor){
@@ -88,6 +81,9 @@ public class CarController : MonoBehaviour
             player.rotation = Quaternion.Euler(carData.lastCp.eulerAngles.x,player.eulerAngles.y,carData.lastCp.eulerAngles.z);
         }
 
+        if (Input.GetButtonDown("XRI_Right_PrimaryButton")){
+            isReversed = !isReversed;
+            stateText.text = isReversed ? "R" : "F";
+        }
     }
-
 }
