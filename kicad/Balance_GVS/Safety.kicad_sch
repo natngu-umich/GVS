@@ -2295,8 +2295,8 @@
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 25.4 10.16 0)
+			(property "Reference" "U4"
+				(at 26.67 8.89 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -2306,7 +2306,7 @@
 				)
 			)
 			(property "Value" "INA303A1IPW"
-				(at 25.4 7.62 0)
+				(at 26.67 6.35 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -2315,7 +2315,7 @@
 					)
 				)
 			)
-			(property "Footprint" "PW14_TEX"
+			(property "Footprint" "INA303A1IPW_footprints:PW14_TEX"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -2343,7 +2343,6 @@
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
-				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -2611,42 +2610,6 @@
 						)
 					)
 				)
-				(pin output line
-					(at 50.8 -2.54 180)
-					(length 7.62)
-					(name "*ALERT2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "11"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 50.8 0 180)
-					(length 7.62)
-					(name "*ALERT1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "12"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
 				(pin input line
 					(at 0 -5.08 0)
 					(length 7.62)
@@ -2676,6 +2639,44 @@
 						)
 					)
 					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(symbol "INA303A1IPW_1_1"
+				(pin open_collector line
+					(at 50.8 -2.54 180)
+					(length 7.62)
+					(name "*ALERT2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 50.8 0 180)
+					(length 7.62)
+					(name "*ALERT1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
 						(effects
 							(font
 								(size 1.27 1.27)
