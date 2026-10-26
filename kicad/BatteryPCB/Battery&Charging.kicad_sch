@@ -3031,6 +3031,145 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "power:+24V"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "+24V"
+				(at 0 3.556 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"+24V\""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "+24V_0_1"
+				(polyline
+					(pts
+						(xy -0.762 1.27) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "+24V_1_1"
+				(pin power_in line
+					(at 0 0 90)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:GND"
 			(power global)
 			(pin_names
@@ -3673,6 +3812,26 @@
 	)
 	(wire
 		(pts
+			(xy 265.43 91.44) (xy 265.43 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "02adb465-0568-44e7-b6aa-c54883627983")
+	)
+	(wire
+		(pts
+			(xy 179.07 148.59) (xy 179.07 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "058db574-fd8a-4a92-a02d-d6f036f8c369")
+	)
+	(wire
+		(pts
 			(xy 113.03 113.03) (xy 113.03 114.3)
 		)
 		(stroke
@@ -3943,6 +4102,16 @@
 	)
 	(wire
 		(pts
+			(xy 265.43 105.41) (xy 265.43 99.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7926562a-5703-466f-8810-80884f384a77")
+	)
+	(wire
+		(pts
 			(xy 151.13 106.68) (xy 149.86 106.68)
 		)
 		(stroke
@@ -4153,6 +4322,16 @@
 	)
 	(wire
 		(pts
+			(xy 179.07 152.4) (xy 190.5 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be43286f-69d6-4931-bf39-27cb79ffb1ee")
+	)
+	(wire
+		(pts
 			(xy 149.86 106.68) (xy 149.86 101.6)
 		)
 		(stroke
@@ -4253,6 +4432,16 @@
 	)
 	(wire
 		(pts
+			(xy 186.69 158.75) (xy 186.69 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e60547e1-0d76-461e-9d35-198ee2fe3631")
+	)
+	(wire
+		(pts
 			(xy 74.93 63.5) (xy 92.71 63.5)
 		)
 		(stroke
@@ -4323,6 +4512,16 @@
 	)
 	(wire
 		(pts
+			(xy 186.69 154.94) (xy 190.5 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f7815135-bc0e-432d-901b-bd5b72d4b906")
+	)
+	(wire
+		(pts
 			(xy 224.79 99.06) (xy 219.71 99.06)
 		)
 		(stroke
@@ -4360,6 +4559,16 @@
 			(type default)
 		)
 		(uuid "fc940154-7aa0-4241-a4de-fcbd799eea08")
+	)
+	(label "VBUS_USB"
+		(at 181.61 152.4 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "3b5be689-e619-40c4-8d76-cdd648daa5be")
 	)
 	(label "Boost_LDO_Point"
 		(at 142.24 152.4 180)
@@ -4401,30 +4610,6 @@
 		)
 		(uuid "f1a424a7-ba5c-483b-be76-4ef339e2d3bb")
 	)
-	(global_label "24V"
-		(shape output)
-		(at 273.05 86.36 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "205f4fea-6a00-4aa9-a065-e44bc33b2fba")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 279.5428 86.36 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
 	(global_label "Battery_Voltage"
 		(shape output)
 		(at 133.35 100.33 270)
@@ -4462,30 +4647,6 @@
 		(uuid "3cfae899-9ae9-4499-94d0-8bc5de3cb21a")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 17.8793 151.13 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "24V"
-		(shape output)
-		(at 81.28 152.4 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "5d261c76-3c70-4b10-bb46-ee93de620b37")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 74.7872 152.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4992,7 +5153,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "BatteryV"
 			(at 50.8 153.6699 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5464,6 +5625,84 @@
 			(project "BatteryPCB"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
 					(reference "D4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+24V")
+		(at 81.28 152.4 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2155e32d-027f-4b46-ae38-98b40ef10265")
+		(property "Reference" "#PWR03"
+			(at 81.28 156.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+24V"
+			(at 81.28 147.32 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 81.28 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 81.28 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+24V\""
+			(at 81.28 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5669bd10-a3d1-441a-bddd-0de1c32b3b66")
+		)
+		(instances
+			(project "BatteryPCB"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
+					(reference "#PWR03")
 					(unit 1)
 				)
 			)
@@ -7161,7 +7400,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "24V"
 			(at 102.87 154.9399 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7456,6 +7695,88 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:Conn_01x02_Pin")
+		(at 195.58 154.94 180)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8708eff6-1682-4fab-8d30-c40c4bb45088")
+		(property "Reference" "J5"
+			(at 196.85 152.3999 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "5V"
+			(at 196.85 154.9399 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical"
+			(at 195.58 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 195.58 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 195.58 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "17bbb976-dcc7-4866-9585-4307db9cd0ef")
+		)
+		(pin "1"
+			(uuid "c88cd757-a289-4329-bbcc-625206eb1dd3")
+		)
+		(instances
+			(project "BatteryPCB"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
+					(reference "J5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 181.61 111.76 0)
 		(unit 1)
@@ -7614,7 +7935,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 265.43 93.98 0)
+		(at 265.43 105.41 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7625,7 +7946,7 @@
 		(fields_autoplaced yes)
 		(uuid "a7d1caf6-44c3-42c8-a606-6df959f823bf")
 		(property "Reference" "#PWR023"
-			(at 265.43 100.33 0)
+			(at 265.43 111.76 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7636,7 +7957,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 265.43 99.06 0)
+			(at 265.43 110.49 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7646,7 +7967,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 265.43 93.98 0)
+			(at 265.43 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7657,7 +7978,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 265.43 93.98 0)
+			(at 265.43 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7668,7 +7989,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 265.43 93.98 0)
+			(at 265.43 105.41 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8222,6 +8543,84 @@
 		)
 	)
 	(symbol
+		(lib_id "power:+24V")
+		(at 273.05 86.36 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "be89151d-940f-454a-b15d-a001c059bf69")
+		(property "Reference" "#PWR04"
+			(at 273.05 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+24V"
+			(at 273.05 81.28 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 273.05 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 273.05 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+24V\""
+			(at 273.05 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "226a364f-8b0d-47ec-8357-76c712806385")
+		)
+		(instances
+			(project "BatteryPCB"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
+					(reference "#PWR04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Diode:SS14")
 		(at 186.69 88.9 180)
 		(unit 1)
@@ -8539,7 +8938,7 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 265.43 90.17 0)
+		(at 265.43 95.25 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -8550,7 +8949,7 @@
 		(fields_autoplaced yes)
 		(uuid "d024cce8-23cd-4b2c-8bf1-1bfe7d15ccaa")
 		(property "Reference" "C6"
-			(at 269.24 88.9 0)
+			(at 269.24 93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8561,7 +8960,7 @@
 			)
 		)
 		(property "Value" "10µF"
-			(at 269.24 91.44 0)
+			(at 269.24 96.52 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8572,7 +8971,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
-			(at 266.3952 93.98 0)
+			(at 266.3952 99.06 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8583,7 +8982,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 265.43 90.17 0)
+			(at 265.43 95.25 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8594,7 +8993,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 265.43 90.17 0)
+			(at 265.43 95.25 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8774,6 +9173,84 @@
 		)
 	)
 	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 179.07 148.59 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d924acd1-ce5b-4cd8-8552-9696e0bad2a3")
+		(property "Reference" "#FLG04"
+			(at 179.07 146.685 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 179.07 143.51 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 179.07 148.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 179.07 148.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 179.07 148.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6ef3ccb2-8381-47e6-8be2-7355961f1a85")
+		)
+		(instances
+			(project "BatteryPCB"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
+					(reference "#FLG04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:Conn_01x02_Pin")
 		(at 156.21 154.94 180)
 		(unit 1)
@@ -8796,7 +9273,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Conn_01x02_Pin"
+		(property "Value" "BoostV"
 			(at 157.48 154.9399 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9084,6 +9561,85 @@
 			(project "BatteryPCB"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
 					(reference "#FLG03")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "GND_1")
+		(lib_id "power:GND")
+		(at 186.69 158.75 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f6186dfd-f82b-4cd8-a36a-fc19ecf35e7d")
+		(property "Reference" "#PWR02"
+			(at 186.69 165.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 186.69 163.83 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 186.69 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 186.69 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 186.69 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "10d22529-1ae6-427b-b242-a736750b0bb9")
+		)
+		(instances
+			(project "BatteryPCB"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/2248e328-a48a-44ef-ac59-468103919e00"
+					(reference "#PWR02")
 					(unit 1)
 				)
 			)
