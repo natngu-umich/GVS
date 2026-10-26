@@ -678,7 +678,7 @@
         "uuid": "fe65ed2a-e0ad-4542-81bb-0c202b789e4d"
       }
     ],
-    "used_designators": "#PWR1-3,#PWR13,#PWR15,#PWR21,#PWR36-84,D3-9,C4,C11-26,Q3-4,J1,J3-5,#FLG1-3,R1-3,R6-7,R21-51,SW2-8,U1-3,U6,U9-13,RV1,S1",
+    "used_designators": "S1,#FLG1-3,R1-3,R6-7,R12-18,R21-55,Q3-6,RV1,C2,C4,C11-30,SW2-8,U1-3,U5-7,U9-13,K2,D3-9,#PWR1-3,#PWR6-7,#PWR13,#PWR15-21,#PWR36-92,J1-5",
     "variants": []
   },
   "sheets": [
@@ -689,10 +689,6 @@
     [
       "1c6ab31e-37ae-4dd6-8c88-946e95d9ae91",
       "Processor"
-    ],
-    [
-      "2248e328-a48a-44ef-ac59-468103919e00",
-      "Battery&Charging"
     ],
     [
       "160079fa-bc51-497a-a54c-4e6e9dab1cff",

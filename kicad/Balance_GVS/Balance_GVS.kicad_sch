@@ -98,52 +98,6 @@
 		)
 	)
 	(sheet
-		(at 175.26 100.33)
-		(size 76.2 54.61)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "2248e328-a48a-44ef-ac59-468103919e00")
-		(property "Sheetname" "Battery&Charging"
-			(at 175.26 99.6184 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "Battery&Charging.kicad_sch"
-			(at 175.26 155.5246 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "Balance_GVS"
-				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d"
-					(page "3")
-				)
-			)
-		)
-	)
-	(sheet
 		(at 57.15 101.6)
 		(size 78.74 52.07)
 		(exclude_from_sim no)
