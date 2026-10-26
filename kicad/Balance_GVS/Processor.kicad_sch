@@ -3866,7 +3866,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 106.68) (xy 77.47 106.68)
+			(xy 68.58 106.68) (xy 81.28 106.68)
 		)
 		(stroke
 			(width 0)
@@ -4776,7 +4776,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 104.14) (xy 77.47 104.14)
+			(xy 68.58 104.14) (xy 81.28 104.14)
 		)
 		(stroke
 			(width 0)
@@ -5076,7 +5076,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 99.06) (xy 77.47 99.06)
+			(xy 68.58 99.06) (xy 81.28 99.06)
 		)
 		(stroke
 			(width 0)
@@ -5226,7 +5226,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 101.6) (xy 77.47 101.6)
+			(xy 68.58 101.6) (xy 81.28 101.6)
 		)
 		(stroke
 			(width 0)
@@ -5634,6 +5634,30 @@
 		)
 		(uuid "fee4dc36-f99a-4aac-8041-c60ede202847")
 	)
+	(global_label "Current_Sense-"
+		(shape bidirectional)
+		(at 215.9 140.97 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3c46fd58-f36c-4e37-ab4a-60a0c79fee79")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 196.745 140.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
 	(global_label "Battery_Voltage"
 		(shape output)
 		(at 152.4 29.21 180)
@@ -5706,30 +5730,6 @@
 			)
 		)
 	)
-	(global_label "INA219_IN-"
-		(shape input)
-		(at 215.9 140.97 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "94d800ae-54f9-4815-ad1d-793b70f98c80")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 201.7871 140.97 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
 	(global_label "Battery_Voltage"
 		(shape output)
 		(at 189.23 39.37 0)
@@ -5754,8 +5754,8 @@
 			)
 		)
 	)
-	(global_label "INA219_IN+"
-		(shape input)
+	(global_label "Safety-"
+		(shape bidirectional)
 		(at 215.9 130.81 180)
 		(fields_autoplaced yes)
 		(effects
@@ -5764,9 +5764,9 @@
 			)
 			(justify right)
 		)
-		(uuid "de017646-9ed4-446d-b7f5-2d5cbc0e1131")
+		(uuid "e25657d7-1d00-4243-aaab-6dc45501d8dd")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 201.7871 130.81 0)
+			(at 204.365 130.81 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7807,6 +7807,88 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:Conn_01x02_Pin")
+		(at 86.36 104.14 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "44fe2dde-068c-4c22-ba96-c24bb0d705e5")
+		(property "Reference" "J10"
+			(at 87.63 106.6801 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "I2C Header 2"
+			(at 87.63 104.1401 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical"
+			(at 86.36 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 86.36 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 86.36 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8428cf1d-2e96-4aaf-a8fd-89e1c86772d4")
+		)
+		(pin "2"
+			(uuid "779f1384-0da0-4a57-a63b-8ad90265621a")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "J10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 257.81 154.94 0)
 		(unit 1)
@@ -9268,7 +9350,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10K"
+		(property "Value" "33"
 			(at 226.06 137.1599 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10730,6 +10812,88 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "#PWR039")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Conn_01x02_Pin")
+		(at 86.36 99.06 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "a11d7d91-3ab0-4327-a3b2-21d45925f1a4")
+		(property "Reference" "J9"
+			(at 87.63 101.6001 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "I2C Header 1"
+			(at 87.63 99.0601 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical"
+			(at 86.36 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 86.36 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 86.36 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c82bfaaa-5d9f-4543-9be4-5fac39117982")
+		)
+		(pin "2"
+			(uuid "bced05bf-30ce-465f-8e79-47abf26d8ad9")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "J9")
 					(unit 1)
 				)
 			)

@@ -18,4 +18,5 @@
 	(lib (name "FSMSMTR") (type "KiCad") (uri "${KIPRJMOD}/FSMSMTR/KiCADv6") (options "") (descr ""))
 	(lib (name "EVQ_P7A01P") (type "KiCad") (uri "${KIPRJMOD}/EVQ_P7A01P/KiCADv6") (options "") (descr ""))
 	(lib (name "PTV09A_2015U_B103") (type "KiCad") (uri "${KIPRJMOD}/PTV09A_2015U_B103") (options "") (descr ""))
+	(lib (name "BAS40") (type "KiCad") (uri "${KIPRJMOD}/BAS40/KiCad") (options "") (descr ""))
 )
