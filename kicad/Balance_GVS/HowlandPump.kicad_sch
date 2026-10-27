@@ -1902,30 +1902,6 @@
 			)
 		)
 	)
-	(global_label "1.65V"
-		(shape input)
-		(at 71.12 104.14 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "17f11a32-5525-4d37-aec8-b0077e5a8903")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 71.12 112.4471 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
 	(global_label "Current_Sense-"
 		(shape bidirectional)
 		(at 138.43 134.62 0)
@@ -1971,6 +1947,30 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+	)
+	(global_label "VREF"
+		(shape input)
+		(at 71.12 104.14 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f28cce3f-2576-4a86-bf1d-841d17edd984")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 71.12 111.7214 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 			)
 		)
 	)
@@ -2448,7 +2448,8 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 55.88 128.27 180)
+		(at 55.88 128.27 0)
+		(mirror x)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2458,7 +2459,7 @@
 		(dnp no)
 		(uuid "3d9155ef-e8fb-4190-8c50-02f952e8b8c8")
 		(property "Reference" "R41"
-			(at 59.182 128.016 90)
+			(at 52.578 128.016 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2468,7 +2469,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 61.722 128.016 90)
+			(at 50.038 128.016 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2478,7 +2479,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
-			(at 57.658 128.27 90)
+			(at 54.102 128.27 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

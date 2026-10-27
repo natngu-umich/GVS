@@ -494,6 +494,146 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Connector:Conn_01x01_Pin"
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Conn_01x01_Pin"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Generic connector, single row, 01x01, script generated"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_locked" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "connector"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "Connector*:*_1x??_*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "Conn_01x01_Pin_1_1"
+				(rectangle
+					(start 0.8636 0.127)
+					(end 0 -0.127)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 0) (xy 0.8636 0)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin passive line
+					(at 5.08 0 180)
+					(length 3.81)
+					(name "Pin_1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Connector:Conn_01x02_Pin"
 			(pin_names
 				(offset 1.016)
@@ -3536,6 +3676,12 @@
 		(uuid "055f9a69-d03f-4ab0-b3a2-f15d84e54b00")
 	)
 	(junction
+		(at 71.12 185.42)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "13a7f42a-a4a7-4040-8685-e1b5825dc760")
+	)
+	(junction
 		(at 156.21 167.64)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3576,6 +3722,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7b0691e7-4f00-456e-ad47-1ae3deacbbd1")
+	)
+	(junction
+		(at 26.67 187.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "871c0acb-3f59-45e0-a938-6033df1d3ec8")
 	)
 	(junction
 		(at 68.58 180.34)
@@ -3915,6 +4067,16 @@
 	)
 	(wire
 		(pts
+			(xy 71.12 190.5) (xy 71.12 185.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "235002eb-0ad6-469e-bb1f-b781931358b8")
+	)
+	(wire
+		(pts
 			(xy 181.61 29.21) (xy 187.96 29.21)
 		)
 		(stroke
@@ -3922,6 +4084,16 @@
 			(type default)
 		)
 		(uuid "239fca55-b88d-4e1e-8a2d-7109ca53b0aa")
+	)
+	(wire
+		(pts
+			(xy 24.13 194.31) (xy 26.67 194.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2944397b-e631-4571-be3a-7052cf3dd743")
 	)
 	(wire
 		(pts
@@ -4505,6 +4677,16 @@
 	)
 	(wire
 		(pts
+			(xy 71.12 185.42) (xy 68.58 185.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b66ae73-7498-43ce-bba4-ad87c72e015d")
+	)
+	(wire
+		(pts
 			(xy 245.11 146.05) (xy 245.11 154.94)
 		)
 		(stroke
@@ -4695,6 +4877,16 @@
 	)
 	(wire
 		(pts
+			(xy 26.67 194.31) (xy 26.67 187.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "978aecc6-17d7-43cc-8b6b-55ff14b7f175")
+	)
+	(wire
+		(pts
 			(xy 246.38 69.85) (xy 236.22 69.85)
 		)
 		(stroke
@@ -4775,7 +4967,7 @@
 	)
 	(wire
 		(pts
-			(xy 72.39 185.42) (xy 68.58 185.42)
+			(xy 72.39 185.42) (xy 71.12 185.42)
 		)
 		(stroke
 			(width 0)
@@ -4952,6 +5144,16 @@
 			(type default)
 		)
 		(uuid "bf6fae97-c7ff-4d4e-b583-cef846ee9ba6")
+	)
+	(wire
+		(pts
+			(xy 68.58 190.5) (xy 71.12 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c105928d-f55e-4475-9113-b11a9b81f76d")
 	)
 	(wire
 		(pts
@@ -5463,7 +5665,7 @@
 		)
 		(uuid "6d354d9f-ec0a-43d0-b36e-7eb9ad2cea4b")
 	)
-	(label "Switch1"
+	(label "Switch2"
 		(at 107.95 162.56 0)
 		(effects
 			(font
@@ -5473,7 +5675,7 @@
 		)
 		(uuid "790d0b29-b0e7-4c36-8908-135b1f3de68b")
 	)
-	(label "Switch2"
+	(label "Switch1"
 		(at 107.95 167.64 0)
 		(effects
 			(font
@@ -10451,6 +10653,83 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:Conn_01x01_Pin")
+		(at 19.05 194.31 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "95120de8-17a6-4f84-bb51-1e33de900c65")
+		(property "Reference" "J15"
+			(at 19.685 189.23 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01_Pin"
+			(at 19.685 191.77 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical"
+			(at 19.05 194.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 19.05 194.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated"
+			(at 19.05 194.31 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f1bfeb1c-a877-41a1-9522-71be4d489321")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "J15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 156.21 92.71 90)
 		(mirror x)
@@ -12537,6 +12816,83 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "#PWR046")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Conn_01x01_Pin")
+		(at 63.5 190.5 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d341fb53-2f41-47b0-b43a-3a46366ff33d")
+		(property "Reference" "J4"
+			(at 64.135 185.42 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01_Pin"
+			(at 64.135 187.96 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x01_P2.54mm_Vertical"
+			(at 63.5 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 63.5 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated"
+			(at 63.5 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ace96b29-4716-44ce-b40c-a6dfbb755cad")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "J4")
 					(unit 1)
 				)
 			)

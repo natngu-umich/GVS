@@ -5215,7 +5215,7 @@
 	)
 	(wire
 		(pts
-			(xy 55.88 172.72) (xy 67.31 172.72)
+			(xy 62.23 172.72) (xy 67.31 172.72)
 		)
 		(stroke
 			(width 0)
@@ -5282,16 +5282,6 @@
 			(type default)
 		)
 		(uuid "fe321558-3e76-43be-99b8-ae5f1edd6e85")
-	)
-	(label "VREF"
-		(at 55.88 172.72 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "004f565c-fc10-47b5-8d7e-26885467a257")
 	)
 	(label "INP"
 		(at 106.68 88.9 180)
@@ -5373,6 +5363,16 @@
 		)
 		(uuid "b7ef64f5-7d9e-4daf-abd9-1bc9d15b4dfd")
 	)
+	(label "1.65V"
+		(at 55.88 167.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d4ca4f9f-b162-4a49-afbc-11b2f2cac89c")
+	)
 	(label "VREF"
 		(at 91.44 109.22 0)
 		(effects
@@ -5403,9 +5403,9 @@
 		)
 		(uuid "d76135a5-06df-4161-8438-067762b20582")
 	)
-	(global_label "1.65V"
+	(global_label "VREF"
 		(shape input)
-		(at 55.88 167.64 180)
+		(at 62.23 172.72 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -5413,9 +5413,9 @@
 			)
 			(justify right)
 		)
-		(uuid "2373e7d4-7909-4e1a-968c-768d3e84ea89")
+		(uuid "331ef53a-4486-4e12-8336-7b400131cb17")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 47.5729 167.64 0)
+			(at 54.6486 172.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10094,8 +10094,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Conn_01x03_Pin")
-		(at 269.24 81.28 90)
-		(mirror x)
+		(at 269.24 81.28 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10103,7 +10102,6 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "faa492e9-4fad-4946-a269-22861306eb28")
 		(property "Reference" "J7"
 			(at 269.24 76.2 90)
