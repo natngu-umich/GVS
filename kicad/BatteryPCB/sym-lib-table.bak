@@ -11,4 +11,6 @@
 	(lib (name "FSMSMTR") (type "KiCad") (uri "${KIPRJMOD}/FSMSMTR/KiCADv6/FSMSMTR.kicad_sym") (options "") (descr ""))
 	(lib (name "EVQ_P7A01P") (type "KiCad") (uri "${KIPRJMOD}/EVQ_P7A01P/KiCADv6/EVQ_P7A01P.kicad_sym") (options "") (descr ""))
 	(lib (name "SRN4018_4R7M") (type "KiCad") (uri "${KIPRJMOD}/SRN4018_4R7M/KiCADv6/SRN4018_4R7M.kicad_sym") (options "") (descr ""))
+	(lib (name "LTST-C190KGKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KGKT/LTST-C190KGKT.kicad_sym") (options "") (descr ""))
+	(lib (name "LTST-C190KRKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KRKT/LTST-C190KRKT.kicad_sym") (options "") (descr ""))
 )
