@@ -7,11 +7,42 @@ using UnityEngine.UI;
 
 public class Demo : MonoBehaviour
 {
+    // Command Opcodes
+    public const byte CMD_STOP = 0;
+    public const byte CMD_START = 1;
+    public const byte CMD_DATA = 2;
+
+    // 10-byte binary packet matching C/C++ struct alignment on ESP32
+    public struct GVSPacket
+    {
+        public byte command;     // 0 = STOP, 1 = START, 2 = DATA (1 byte)
+        public byte direction;   // 1 = Left-to-Right (+Roll), 0 = Right-to-Left (-Roll) (1 byte)
+        public int frequency;    // mHz (4 bytes, Little-Endian)
+        public int amplitude;    // uA (4 bytes, Little-Endian)
+
+        // Zero-allocation serialization into a pre-allocated 10-byte buffer
+        public void WriteToBuffer(byte[] buf)
+        {
+            buf[0] = command;
+            buf[1] = direction;
+
+            buf[2] = (byte)(frequency & 0xFF);
+            buf[3] = (byte)((frequency >> 8) & 0xFF);
+            buf[4] = (byte)((frequency >> 16) & 0xFF);
+            buf[5] = (byte)((frequency >> 24) & 0xFF);
+
+            buf[6] = (byte)(amplitude & 0xFF);
+            buf[7] = (byte)((amplitude >> 8) & 0xFF);
+            buf[8] = (byte)((amplitude >> 16) & 0xFF);
+            buf[9] = (byte)((amplitude >> 24) & 0xFF);
+        }
+    }
+
     [Header("State")]
     public bool isScanningDevices = false;
     public bool isSubscribed = false;
 
-    [Header("UI References")]
+    [Header("Screen 1: Scanning UI References")]
     public Text deviceScanButtonText;
     public Text deviceScanStatusText;
     public GameObject deviceScanResultProto;
@@ -27,8 +58,27 @@ public class Demo : MonoBehaviour
     public InputField writeInput;
     public Text errorText;
 
+    [Header("Screen 2: GVS Control UI References")]
+    public Dropdown gvsCommandDropdown;
+    public Dropdown gvsDirectionDropdown;
+    public Slider gvsFrequencySlider;
+    public Text gvsFrequencyValueText;
+    public Slider gvsAmplitudeSlider;
+    public Text gvsAmplitudeValueText;
+    public Text gvsPacketPreviewText;
+    public Button gvsSendButton;
+    public Button gvsSubscribeButton;      // Optional: Subscribe button on Screen 2
+    public Text gvsSubscribeText;          // Optional: Incoming data display on Screen 2
+
     Transform scanResultRoot;
     public string selectedDeviceId;
+    public string selectedServiceId;
+    public string selectedCharacteristicId;
+    private Dictionary<string, string> characteristicMap = new Dictionary<string, string>();
+
+    // Pre-allocated 10-byte buffer and current packet state
+    private byte[] gvsTxBuffer = new byte[10];
+    private GVSPacket currentPacket;
 
     // Core API references
     BLE ble;
@@ -44,7 +94,6 @@ public class Demo : MonoBehaviour
     private string latestReceivedData = "";
     private bool hasNewData = false;
 
-    // UI exchange variables for dropdowns
     private List<string> newServicesToRender = new List<string>();
     private bool hasNewServices = false;
 
@@ -56,12 +105,120 @@ public class Demo : MonoBehaviour
         ble = new BLE();
         scanResultRoot = deviceScanResultProto.transform.parent;
         deviceScanResultProto.transform.SetParent(null);
+
+        InitializeGVSControls();
+    }
+
+    private void InitializeGVSControls()
+    {
+        // 1. Setup Command Dropdown (Index 0 = STOP, 1 = START, 2 = DATA)
+        if (gvsCommandDropdown != null)
+        {
+            gvsCommandDropdown.ClearOptions();
+            gvsCommandDropdown.AddOptions(new List<string> {
+                "0: CMD_STOP",
+                "1: CMD_START",
+                "2: CMD_DATA"
+            });
+            gvsCommandDropdown.value = CMD_DATA;
+            gvsCommandDropdown.onValueChanged.AddListener(delegate { UpdateGVSPacketFromUI(); });
+        }
+
+        // 2. Setup Direction Dropdown (Index 0 = Right-to-Left, 1 = Left-to-Right)
+        if (gvsDirectionDropdown != null)
+        {
+            gvsDirectionDropdown.ClearOptions();
+            gvsDirectionDropdown.AddOptions(new List<string> {
+                "0: Right-to-Left (-Roll)",
+                "1: Left-to-Right (+Roll)"
+            });
+            gvsDirectionDropdown.value = 0;
+            gvsDirectionDropdown.onValueChanged.AddListener(delegate { UpdateGVSPacketFromUI(); });
+        }
+
+        // 3. Setup Frequency Slider (mHz)
+        if (gvsFrequencySlider != null)
+        {
+            gvsFrequencySlider.wholeNumbers = true;
+            gvsFrequencySlider.onValueChanged.AddListener(delegate { UpdateGVSPacketFromUI(); });
+        }
+
+        // 4. Setup Amplitude Slider (uA)
+        if (gvsAmplitudeSlider != null)
+        {
+            gvsAmplitudeSlider.wholeNumbers = true;
+            gvsAmplitudeSlider.onValueChanged.AddListener(delegate { UpdateGVSPacketFromUI(); });
+        }
+
+        UpdateGVSPacketFromUI();
+    }
+
+    // Called automatically whenever any GVS Dropdown or Slider changes
+    public void UpdateGVSPacketFromUI()
+    {
+        if (gvsCommandDropdown != null)
+            currentPacket.command = (byte)gvsCommandDropdown.value;
+
+        if (gvsDirectionDropdown != null)
+            currentPacket.direction = (byte)gvsDirectionDropdown.value;
+
+        if (gvsFrequencySlider != null)
+        {
+            currentPacket.frequency = Mathf.RoundToInt(gvsFrequencySlider.value);
+            if (gvsFrequencyValueText != null)
+                gvsFrequencyValueText.text = $"{currentPacket.frequency} mHz";
+        }
+
+        if (gvsAmplitudeSlider != null)
+        {
+            currentPacket.amplitude = Mathf.RoundToInt(gvsAmplitudeSlider.value);
+            if (gvsAmplitudeValueText != null)
+                gvsAmplitudeValueText.text = $"{currentPacket.amplitude} uA";
+        }
+
+        // Serialize into the 10-byte buffer
+        currentPacket.WriteToBuffer(gvsTxBuffer);
+
+        // Update the explicit packet preview text
+        if (gvsPacketPreviewText != null)
+        {
+            string hexBytes = BitConverter.ToString(gvsTxBuffer);
+            string cmdName = currentPacket.command == 0 ? "STOP" : (currentPacket.command == 1 ? "START" : "DATA");
+            string dirName = currentPacket.direction == 1 ? "L-to-R (+Roll)" : "R-to-L (-Roll)";
+
+            gvsPacketPreviewText.text =
+                $"<b>GVSPacket Preview (10 Bytes):</b>\n" +
+                $"Cmd: {currentPacket.command} ({cmdName}) | Dir: {currentPacket.direction} ({dirName})\n" +
+                $"Freq: {currentPacket.frequency} mHz | Amp: {currentPacket.amplitude} uA\n" +
+                $"Raw Hex: [{hexBytes}]";
+        }
+    }
+
+    // Bind this to your Screen 2 "Send" Button OnClick()
+    public void SendGVSPacket()
+    {
+        if (string.IsNullOrEmpty(selectedDeviceId) || string.IsNullOrEmpty(selectedServiceId) || string.IsNullOrEmpty(selectedCharacteristicId))
+        {
+            Debug.LogWarning("BLE Device, Service, or Characteristic not selected!");
+            if (errorText != null) errorText.text = "Select Device, Service & Characteristic first!";
+            return;
+        }
+
+        UpdateGVSPacketFromUI();
+
+        try
+        {
+            BLE.WritePackage(selectedDeviceId, selectedServiceId, selectedCharacteristicId, gvsTxBuffer);
+            Debug.Log($"Sent GVS Packet: {BitConverter.ToString(gvsTxBuffer)}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("GVS Write failed: " + e.Message);
+        }
     }
 
     void Update()
     {
-        // 1. Safely render newly discovered devices on the Unity Main Thread
-        // Safely render UI updates on the Unity Main Thread
         lock (uiLock)
         {
             // 1. Render newly discovered devices
@@ -111,15 +268,16 @@ public class Demo : MonoBehaviour
                 hasNewCharacteristics = false;
             }
 
-            // 4. Safely render incoming payload data
+            // 4. Safely render incoming payload data on both screens
             if (hasNewData)
             {
-                subcribeText.text = latestReceivedData;
+                if (subcribeText != null) subcribeText.text = latestReceivedData;
+                if (gvsSubscribeText != null) gvsSubscribeText.text = latestReceivedData;
                 hasNewData = false;
             }
         }
 
-        // 3. Monitor for BLE Errors
+        // Monitor for BLE Errors
         string currentError = BLE.GetError();
         if (currentError != "Ok" && lastError != currentError)
         {
@@ -133,7 +291,6 @@ public class Demo : MonoBehaviour
     {
         if (!isScanningDevices)
         {
-            // Clear old UI list
             for (int i = scanResultRoot.childCount - 1; i >= 0; i--)
                 Destroy(scanResultRoot.GetChild(i).gameObject);
 
@@ -143,20 +300,15 @@ public class Demo : MonoBehaviour
             deviceScanStatusText.text = "scanning";
 
             scan = BLE.ScanDevices();
-
-            // Create a set to track IDs and prevent UI duplicates
             HashSet<string> renderedDeviceIds = new HashSet<string>();
 
-            // Background thread callback
             scan.Found = (id, name) =>
             {
-                // 1. Ignore anonymous devices with no name (matching the old demo's behavior)
                 if (string.IsNullOrEmpty(name))
                     return;
 
                 lock (uiLock)
                 {
-                    // 2. Prevent adding the same device to the UI multiple times
                     if (!renderedDeviceIds.Contains(id))
                     {
                         renderedDeviceIds.Add(id);
@@ -168,7 +320,6 @@ public class Demo : MonoBehaviour
             scan.Finished = () =>
             {
                 isScanningDevices = false;
-                // UI updates must happen via variables checked in Update()
             };
         }
         else
@@ -182,7 +333,6 @@ public class Demo : MonoBehaviour
 
     public void SelectDevice(GameObject data)
     {
-        // Highlight selection
         for (int i = 0; i < scanResultRoot.transform.childCount; i++)
         {
             var child = scanResultRoot.transform.GetChild(i).gameObject;
@@ -191,18 +341,9 @@ public class Demo : MonoBehaviour
 
         selectedDeviceId = data.name;
         if (serviceScanButton != null) serviceScanButton.interactable = true;
-        if (subscribeButton != null) subscribeButton.interactable = true; // Allow direct connect
+        if (subscribeButton != null) subscribeButton.interactable = true;
+        if (gvsSubscribeButton != null) gvsSubscribeButton.interactable = true;
     }
-
-    // --------------------------------------------------------------------------------
-    // Service & Characteristic Flow
-    // The new API handles this automatically inside ble.Connect(). 
-    // To keep the UI visually functional without throwing errors, these 
-    // buttons now inject your target UUIDs directly into the UI dropdowns.
-    // --------------------------------------------------------------------------------
-    public string selectedServiceId;
-    public string selectedCharacteristicId;
-    private Dictionary<string, string> characteristicMap = new Dictionary<string, string>();
 
     public void StartServiceScan()
     {
@@ -254,7 +395,6 @@ public class Demo : MonoBehaviour
         }
     }
 
-
     public void SelectCharacteristic(GameObject data)
     {
         if (characteristicDropdown.options.Count > 0)
@@ -264,29 +404,36 @@ public class Demo : MonoBehaviour
 
             if (subscribeButton != null) subscribeButton.interactable = true;
             if (writeButton != null) writeButton.interactable = true;
+            if (gvsSendButton != null) gvsSendButton.interactable = true;
+            if (gvsSubscribeButton != null) gvsSubscribeButton.interactable = true;
         }
     }
-    // --------------------------------------------------------------------------------
 
     public void Subscribe()
     {
         if (string.IsNullOrEmpty(selectedDeviceId)) return;
 
         if (subscribeButton != null) subscribeButton.interactable = false;
-        subcribeText.text = "Connecting...";
+        if (gvsSubscribeButton != null) gvsSubscribeButton.interactable = false;
+        if (subcribeText != null) subcribeText.text = "Connecting...";
+        if (gvsSubscribeText != null) gvsSubscribeText.text = "Connecting...";
 
         connectionThread = new Thread(() =>
         {
             try
             {
-                // The new Connect method handles the service and characteristic resolution
                 bool success = ble.Connect(selectedDeviceId, selectedServiceId, new string[] { selectedCharacteristicId });
                 if (success)
                 {
                     isSubscribed = true;
                     keepReading = true;
 
-                    // Spin up the persistent reader loop
+                    lock (uiLock)
+                    {
+                        latestReceivedData = "Connected & Subscribed";
+                        hasNewData = true;
+                    }
+
                     readingThread = new Thread(ReadLoop) { IsBackground = true };
                     readingThread.Start();
                 }
@@ -300,6 +447,7 @@ public class Demo : MonoBehaviour
         connectionThread.Start();
 
         if (writeButton != null) writeButton.interactable = true;
+        if (gvsSendButton != null) gvsSendButton.interactable = true;
     }
 
     private void ReadLoop()
@@ -311,13 +459,10 @@ public class Demo : MonoBehaviour
             {
                 lock (uiLock)
                 {
-                    // By default, renders incoming data as ASCII text.
-                    latestReceivedData = Encoding.ASCII.GetString(res);
-
-                    // If your GVS ESP32 is sending raw struct bytes (like angles/commands), 
-                    // comment out the line above and uncomment the line below:
-                    // latestReceivedData = BitConverter.ToString(res); 
-
+                    // Renders both ASCII and Raw Hex so you can inspect binary or string replies
+                    string ascii = Encoding.ASCII.GetString(res);
+                    string hex = BitConverter.ToString(res);
+                    latestReceivedData = $"ASCII: {ascii} | Hex: [{hex}]";
                     hasNewData = true;
                 }
             }
@@ -329,7 +474,6 @@ public class Demo : MonoBehaviour
     {
         if (string.IsNullOrEmpty(selectedDeviceId)) return;
 
-        // Grabs text from the UI Input Field and converts it to a byte array
         byte[] payload = Encoding.ASCII.GetBytes(writeInput.text);
 
         try
