@@ -14,4 +14,5 @@
 	(lib (name "LTST-C190KGKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KGKT/LTST-C190KGKT.kicad_sym") (options "") (descr ""))
 	(lib (name "LTST-C190KRKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KRKT/LTST-C190KRKT.kicad_sym") (options "") (descr ""))
 	(lib (name "B3B_XH_A") (type "KiCad") (uri "${KIPRJMOD}/B3B_XH_A/B3B-XH-A.kicad_sym") (options "") (descr ""))
+	(lib (name "500SSP1S1M2QEA") (type "KiCad") (uri "${KIPRJMOD}/500SSP1S1M2QEA/500SSP1S1M2QEA.kicad_sym") (options "") (descr ""))
 )

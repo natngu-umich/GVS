@@ -1,0 +1,24 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#SamacSys ECAD Model 500SSP1S1M2QEA
+#/801953/2194188/2.50/3/2/Switch
+DEF 500SSP1S1M2QEA S 0 30 Y Y 1 F N
+F0 "S" 750 300 50 H V L CNN
+F1 "500SSP1S1M2QEA" 750 200 50 H V L CNN
+F2 "500SSP1S1M2QEA" 750 100 50 H I L CNN
+F3 "https://configured-product-images.s3.amazonaws.com/2D/specs/500SSP1S1M7QEA.pdf" 750 0 50 H I L CNN
+F4 "ROCKER, 15A, 125VAC SPST, On-Off, Panel Mount, Through Hole, Snap-In" 750 -100 50 H I L CNN "Description"
+F5 "11.43" 750 -200 50 H I L CNN "Height"
+F6 "612-500-A121" 750 -300 50 H I L CNN "Mouser Part Number"
+F7 "https://www.mouser.co.uk/ProductDetail/E-Switch/500SSP1S1M2QEA?qs=rR7wk9eDIwofjM3j2mZRnA%3D%3D" 750 -400 50 H I L CNN "Mouser Price/Stock"
+F8 "E-Switch" 750 -500 50 H I L CNN "Manufacturer_Name"
+F9 "500SSP1S1M2QEA" 750 -600 50 H I L CNN "Manufacturer_Part_Number"
+DRAW
+X NC 1 0 0 200 R 50 50 0 0 N
+X COM 2 0 -100 200 R 50 50 0 0 P
+X NO 3 0 -200 200 R 50 50 0 0 P
+P 5 0 1 6 200 100 700 100 700 -300 200 -300 200 100 N
+ENDDRAW
+ENDDEF
+#
+#End Library

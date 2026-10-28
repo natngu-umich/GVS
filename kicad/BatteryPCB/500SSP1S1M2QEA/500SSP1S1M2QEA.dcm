@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 500SSP1S1M2QEA
+D ROCKER, 15A, 125VAC SPST, On-Off, Panel Mount, Through Hole, Snap-In
+K
+F https://configured-product-images.s3.amazonaws.com/2D/specs/500SSP1S1M7QEA.pdf
+$ENDCMP
+#
+#End Doc Library

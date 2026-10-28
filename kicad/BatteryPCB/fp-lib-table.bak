@@ -13,4 +13,5 @@
 	(lib (name "EVQ_P7A01P") (type "KiCad") (uri "${KIPRJMOD}/EVQ_P7A01P/KiCADv6/EVQ_P7A01P_footprints.pretty") (options "") (descr ""))
 	(lib (name "LTST_C190KGKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KGKT") (options "") (descr ""))
 	(lib (name "LTST_C190KRKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KRKT") (options "") (descr ""))
+	(lib (name "B3B_XH_A") (type "KiCad") (uri "${KIPRJMOD}/B3B_XH_A") (options "") (descr ""))
 )
