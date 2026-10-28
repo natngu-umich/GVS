@@ -1311,6 +1311,308 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "EVQ_P7A01P:EVQ-P7A01P"
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "SW"
+				(at 20.32 7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.524 1.524)
+					)
+				)
+			)
+			(property "Value" "EVQ-P7A01P"
+				(at 20.32 5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.524 1.524)
+					)
+				)
+			)
+			(property "Footprint" "EVQ_P7_PAN"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(italic yes)
+					)
+				)
+			)
+			(property "Datasheet" "EVQ-P7A01P"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(italic yes)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_locked" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "EVQ-P7A01P"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "EVQ_P7_PAN EVQ_P7_PAN-M EVQ_P7_PAN-L"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "EVQ-P7A01P_0_1"
+				(polyline
+					(pts
+						(xy 7.62 2.54) (xy 7.62 -10.16)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 7.62 0) (xy 33.02 0)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 7.62 -7.62) (xy 33.02 -7.62)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 7.62 -10.16) (xy 33.02 -10.16)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 20.32 0) (xy 20.32 -2.286)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 20.32 -2.54)
+					(radius 0.254)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 20.32 -4.826) (xy 21.59 -2.54)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 20.32 -5.08)
+					(radius 0.254)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 20.32 -7.62) (xy 20.32 -5.334)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 33.02 2.54) (xy 7.62 2.54)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 33.02 -10.16) (xy 33.02 2.54)
+					)
+					(stroke
+						(width 0.127)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at 0 0 0)
+					(length 7.62)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 40.64 0 180)
+					(length 7.62)
+					(name "1*"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1*"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 -7.62 0)
+					(length 7.62)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 40.64 -7.62 180)
+					(length 7.62)
+					(name "2*"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2*"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "GND_1"
 			(power global)
 			(pin_names
@@ -3135,170 +3437,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Switch:SW_Push"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "SW"
-				(at 1.27 2.54 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "SW_Push"
-				(at 0 -1.524 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Push button switch, generic, two pins"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "switch normally-open pushbutton push-button"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "SW_Push_0_1"
-				(circle
-					(center -2.032 0)
-					(radius 0.508)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 1.27) (xy 0 3.048)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(circle
-					(center 2.032 0)
-					(radius 0.508)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 1.27) (xy -2.54 1.27)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at -5.08 0 0)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 2.54)
-					(name "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "power:+3.3V"
 			(power global)
 			(pin_numbers
@@ -3808,16 +3946,20 @@
 		(uuid "ff8541f5-d8c0-4cac-8798-dc91dce940b6")
 	)
 	(no_connect
-		(at 68.58 96.52)
-		(uuid "04c2b2e6-68cb-45d2-98b8-6b3fb1ddfe7d")
-	)
-	(no_connect
 		(at 68.58 78.74)
 		(uuid "1622b64e-42d7-4956-9ad0-7d5325f1fe67")
 	)
 	(no_connect
 		(at 38.1 76.2)
 		(uuid "183fd5cc-a69a-452d-b814-45f7b0630b6d")
+	)
+	(no_connect
+		(at 35.56 142.24)
+		(uuid "2bce74f2-52b0-405c-8a87-1907e15f9925")
+	)
+	(no_connect
+		(at 163.83 46.99)
+		(uuid "392e03db-f97a-4f4e-b73d-574a868c88d6")
 	)
 	(no_connect
 		(at 38.1 73.66)
@@ -3828,8 +3970,20 @@
 		(uuid "52f68d30-13f2-4f89-849e-880bec351eee")
 	)
 	(no_connect
+		(at 72.39 139.7)
+		(uuid "842ab2f1-068d-4b62-b58e-b428d7634022")
+	)
+	(no_connect
 		(at 68.58 81.28)
 		(uuid "9b66b83d-1170-4eeb-b658-89636d7f4132")
+	)
+	(no_connect
+		(at 156.21 46.99)
+		(uuid "be565c2e-d85e-4ee3-96ef-a875af04491d")
+	)
+	(no_connect
+		(at 80.01 139.7)
+		(uuid "c3b98a94-7d56-407d-91ab-a7272762122a")
 	)
 	(no_connect
 		(at 68.58 127)
@@ -3842,6 +3996,10 @@
 	(no_connect
 		(at 68.58 83.82)
 		(uuid "d6ff45db-9a26-4ef2-a720-72671f9a0271")
+	)
+	(no_connect
+		(at 43.18 142.24)
+		(uuid "dc15b447-020d-485d-bdc2-c53aec1facb2")
 	)
 	(wire
 		(pts
@@ -3885,6 +4043,16 @@
 	)
 	(wire
 		(pts
+			(xy 77.47 96.52) (xy 68.58 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0a060a79-6a97-48d8-bd5c-6da6bb48c3d9")
+	)
+	(wire
+		(pts
 			(xy 234.95 138.43) (xy 234.95 140.97)
 		)
 		(stroke
@@ -3905,7 +4073,7 @@
 	)
 	(wire
 		(pts
-			(xy 151.13 87.63) (xy 147.32 87.63)
+			(xy 147.32 87.63) (xy 156.21 87.63)
 		)
 		(stroke
 			(width 0)
@@ -3922,6 +4090,16 @@
 			(type default)
 		)
 		(uuid "0e2fd1d0-1031-4186-b63a-f3ac8b36764f")
+	)
+	(wire
+		(pts
+			(xy 163.83 87.63) (xy 170.18 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0ece9c40-470f-4880-9521-c64bd20c41ef")
 	)
 	(wire
 		(pts
@@ -4105,6 +4283,16 @@
 	)
 	(wire
 		(pts
+			(xy 43.18 182.88) (xy 49.53 182.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "391651a4-6124-4fe9-b3b2-a7c306d19991")
+	)
+	(wire
+		(pts
 			(xy 152.4 34.29) (xy 158.75 34.29)
 		)
 		(stroke
@@ -4285,7 +4473,7 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 182.88) (xy 26.67 182.88)
+			(xy 26.67 182.88) (xy 35.56 182.88)
 		)
 		(stroke
 			(width 0)
@@ -4305,16 +4493,6 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 87.63) (xy 170.18 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4c003fc6-6225-416b-bc47-44e5d60ef402")
-	)
-	(wire
-		(pts
 			(xy 68.58 116.84) (xy 77.47 116.84)
 		)
 		(stroke
@@ -4322,16 +4500,6 @@
 			(type default)
 		)
 		(uuid "4cd01f23-4bfc-49f3-a091-f26f26aac3cc")
-	)
-	(wire
-		(pts
-			(xy 81.28 180.34) (xy 90.17 180.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "51f0b0e7-bf11-4450-9927-4429579b27cf")
 	)
 	(wire
 		(pts
@@ -4372,6 +4540,16 @@
 			(type default)
 		)
 		(uuid "56dff1ca-8e33-433e-9e47-ea4a9fde0f54")
+	)
+	(wire
+		(pts
+			(xy 77.47 95.25) (xy 77.47 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "581d5959-4594-4d77-8230-0f0575f8140e")
 	)
 	(wire
 		(pts
@@ -4522,6 +4700,16 @@
 			(type default)
 		)
 		(uuid "700c9587-637d-4a52-ab1f-fe2fc5cf32da")
+	)
+	(wire
+		(pts
+			(xy 80.01 180.34) (xy 90.17 180.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "70f7cd7f-ac7b-49b5-bdd4-8d8b66f96b68")
 	)
 	(wire
 		(pts
@@ -4735,7 +4923,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 180.34) (xy 71.12 180.34)
+			(xy 68.58 180.34) (xy 72.39 180.34)
 		)
 		(stroke
 			(width 0)
@@ -4842,6 +5030,16 @@
 			(type default)
 		)
 		(uuid "9b50dca2-7c5c-4401-85f8-997982803e34")
+	)
+	(wire
+		(pts
+			(xy 77.47 95.25) (xy 80.01 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c8dd6b1-576a-4412-8c81-fca7ec3112f6")
 	)
 	(wire
 		(pts
@@ -5385,16 +5583,6 @@
 	)
 	(wire
 		(pts
-			(xy 40.64 182.88) (xy 49.53 182.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ece57039-b5b3-4249-ba40-74738cf41752")
-	)
-	(wire
-		(pts
 			(xy 29.21 68.58) (xy 38.1 68.58)
 		)
 		(stroke
@@ -5784,6 +5972,30 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+			)
+		)
+	)
+	(global_label "ARM"
+		(shape input)
+		(at 80.01 95.25 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "2a82b268-7ce1-4151-89f6-68422d026d81")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 86.8052 95.25 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 			)
 		)
 	)
@@ -6466,87 +6678,6 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "R43")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Switch:SW_Push")
-		(at 35.56 182.88 0)
-		(mirror y)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "15341075-4aaf-40b4-917b-c6338138da91")
-		(property "Reference" "SW3"
-			(at 35.56 175.26 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SW_Push"
-			(at 35.56 177.8 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "FSMSMTR:SWITCH_FSMSMTR_TYC"
-			(at 35.56 177.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 35.56 177.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 35.56 182.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "67a6ea0f-8a1c-4d14-9a56-f6e7c42de6f0")
-		)
-		(pin "2"
-			(uuid "7d836061-8f06-46e8-b6d2-94fbe7c94a17")
-		)
-		(instances
-			(project "Balance_GVS"
-				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
-					(reference "SW3")
 					(unit 1)
 				)
 			)
@@ -7837,6 +7968,186 @@
 		)
 	)
 	(symbol
+		(lib_id "EVQ_P7A01P:EVQ-P7A01P")
+		(at 72.39 180.34 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3d68a418-25cc-402b-9950-55f91ece73c1")
+		(property "Reference" "SW6"
+			(at 83.82 158.7499 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "EVQ-P7A01P"
+			(at 83.82 161.2899 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "EVQ_P7A01P:EVQ_P7_PAN"
+			(at 72.39 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Datasheet" "EVQ-P7A01P"
+			(at 72.39 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 72.39 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "34ff848e-616c-42b4-8bb7-1bd44639ab4e")
+		)
+		(pin "1*"
+			(uuid "b108339d-524f-4016-a440-a091436ef90d")
+		)
+		(pin "2*"
+			(uuid "9ada02a0-12f8-44ca-87db-8257988938ef")
+		)
+		(pin "1"
+			(uuid "03ed1bb2-abf3-4279-a5de-277e9ac37546")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "SW6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "EVQ_P7A01P:EVQ-P7A01P")
+		(at 156.21 87.63 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4030b58c-c887-4eae-9a4a-61c3cce1bd46")
+		(property "Reference" "SW4"
+			(at 167.64 66.0399 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "EVQ-P7A01P"
+			(at 167.64 68.5799 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "EVQ_P7A01P:EVQ_P7_PAN"
+			(at 156.21 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Datasheet" "EVQ-P7A01P"
+			(at 156.21 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 156.21 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "6fd36ede-ddcf-4e69-bafe-b257fd427f3a")
+		)
+		(pin "1*"
+			(uuid "08d5ce2a-1dca-40e2-b0e9-f04737010bc9")
+		)
+		(pin "2*"
+			(uuid "06bb7abe-d79a-422c-9fca-a9e8b9daec5d")
+		)
+		(pin "1"
+			(uuid "d5581346-9159-41f3-8ba8-d1c13f5f3a62")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "SW4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 109.22 49.53 0)
 		(unit 1)
@@ -9046,87 +9357,6 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "D2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Switch:SW_Push")
-		(at 156.21 87.63 0)
-		(mirror y)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "6670490b-7a1e-48a7-a667-b2d35b4d6a8f")
-		(property "Reference" "SW5"
-			(at 156.21 80.01 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SW_Push"
-			(at 156.21 82.55 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "FSMSMTR:SWITCH_FSMSMTR_TYC"
-			(at 156.21 82.55 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 156.21 82.55 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 156.21 87.63 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "02024e6f-8347-4b5c-aa7f-5e7bde784fda")
-		)
-		(pin "2"
-			(uuid "2789c4e9-ff15-42a2-acfa-ad36c499c1ac")
-		)
-		(instances
-			(project "Balance_GVS"
-				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
-					(reference "SW5")
 					(unit 1)
 				)
 			)
@@ -10695,87 +10925,6 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "R47")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Switch:SW_Push")
-		(at 76.2 180.34 0)
-		(mirror y)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "97b593a9-61ed-4fe2-865f-84f188374692")
-		(property "Reference" "SW4"
-			(at 76.2 172.72 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SW_Push"
-			(at 76.2 175.26 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "FSMSMTR:SWITCH_FSMSMTR_TYC"
-			(at 76.2 175.26 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 76.2 175.26 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Push button switch, generic, two pins"
-			(at 76.2 180.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "179b51fd-dd62-4d0d-b79b-2d1362b53374")
-		)
-		(pin "2"
-			(uuid "2ccd3009-3f8d-44e7-ad0d-0cdf5ea3c678")
-		)
-		(instances
-			(project "Balance_GVS"
-				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
-					(reference "SW4")
 					(unit 1)
 				)
 			)
@@ -12963,6 +13112,96 @@
 			(project "Balance_GVS"
 				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
 					(reference "U6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "EVQ_P7A01P:EVQ-P7A01P")
+		(at 35.56 182.88 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f38edaab-5813-4446-8ead-6ad38c098b07")
+		(property "Reference" "SW3"
+			(at 46.99 161.2899 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "EVQ-P7A01P"
+			(at 46.99 163.8299 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.524 1.524)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "EVQ_P7A01P:EVQ_P7_PAN"
+			(at 35.56 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Datasheet" "EVQ-P7A01P"
+			(at 35.56 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 35.56 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "512f457b-55c5-45b8-818c-c463fa43888e")
+		)
+		(pin "1*"
+			(uuid "52f76cfd-6903-4588-a49e-ed04945d1ec6")
+		)
+		(pin "2*"
+			(uuid "01eac118-f9c3-4eb1-a9e1-c274d00f162e")
+		)
+		(pin "1"
+			(uuid "fa592bd0-c7cb-4237-9bb5-e4868a1dac87")
+		)
+		(instances
+			(project "Balance_GVS"
+				(path "/fe65ed2a-e0ad-4542-81bb-0c202b789e4d/1c6ab31e-37ae-4dd6-8c88-946e95d9ae91"
+					(reference "SW3")
 					(unit 1)
 				)
 			)
