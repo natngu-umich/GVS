@@ -92,7 +92,7 @@ public class WheelController : MonoBehaviour
         else
         {
             // Mathf.Abs ensures triggers work whether Unity maps them to [0..1] or [-1..0]
-            controller.accelerating(Mathf.Abs(Input.GetAxis("XRI_Right_Trigger")));
+            controller.accelerating(-Mathf.Abs(Input.GetAxis("XRI_Right_Trigger")));
             controller.braking(Mathf.Abs(Input.GetAxis("XRI_Left_Trigger")));
         }
 
