@@ -20,4 +20,5 @@
 	(lib (name "PTV09A_2015U_B103") (type "KiCad") (uri "${KIPRJMOD}/PTV09A_2015U_B103") (options "") (descr ""))
 	(lib (name "BAS40") (type "KiCad") (uri "${KIPRJMOD}/BAS40/KiCad") (options "") (descr ""))
 	(lib (name "B3B_XH_A") (type "KiCad") (uri "${KIPRJMOD}/B3B_XH_A/B3B-XH-A.kicad_sym") (options "") (descr ""))
+	(lib (name "SN74LVC1G74DCUR") (type "KiCad") (uri "${KIPRJMOD}/ul_SN74LVC1G74DCUR/KiCADv6/2026-10-28_06-16-09.kicad_sym") (options "") (descr ""))
 )
