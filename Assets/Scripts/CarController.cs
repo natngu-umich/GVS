@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.XR;
 public class CarController : MonoBehaviour
 {
     [System.Serializable]
@@ -67,23 +68,64 @@ public class CarController : MonoBehaviour
         carCam.SetActive(true);
     }
 
-    private void Update() {
+    private bool wasReversePressed = false;
+    private bool wasResetPressed = false;
+    private void Update()
+    {
         // Updates the position and lap the player car is on
         positionText.text = leaderboard.leaderboardPosition(carData.carName).ToString() + "/" + leaderboard.carCp.Count.ToString();
         lapInfo.text = "Lap:\n" + carData.numLaps.ToString() + "/" + raceControl.maxLaps.ToString();
-        if(carData.isFinished == true){
+
+        if (carData.isFinished == true)
+        {
             endCam.SetActive(true);
             carCam.SetActive(false);
         }
+
         // Unrolls car if it is rolled over
-        if(Input.GetButtonDown("XRI_Left_PrimaryButton")||Input.GetButtonDown("Jump")){
-            player.position = carData.lastCp.position;
-            player.rotation = Quaternion.Euler(carData.lastCp.eulerAngles.x,player.eulerAngles.y,carData.lastCp.eulerAngles.z);
+        // 1. Get the physical left VR controller directly
+        InputDevice leftController = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
+
+        // 2. Read the raw state of the "X" button (Left Primary)
+        bool isLeftPrimaryPressing = false;
+        if (leftController.isValid)
+        {
+            leftController.TryGetFeatureValue(CommonUsages.primaryButton, out isLeftPrimaryPressing);
         }
 
-        if (Input.GetButtonDown("XRI_Right_PrimaryButton")){
+        // 3. Check if either the VR button or the keyboard Jump button is being pressed
+        bool isResetPressing = isLeftPrimaryPressing || Input.GetButton("Jump");
+
+        // 4. Trigger the reset ONLY on the initial press (mimicking GetButtonDown)
+        if (isResetPressing && !wasResetPressed)
+        {
+            player.position = carData.lastCp.position;
+            player.rotation = Quaternion.Euler(carData.lastCp.eulerAngles.x, player.eulerAngles.y, carData.lastCp.eulerAngles.z);
+            Debug.Log("Car unrolled to last checkpoint.");
+        }
+
+        // 5. Save the state for the next frame
+        wasResetPressed = isResetPressing;
+
+
+
+        // Foolproof Reverse Toggle (Removed the crash-causing GetAxis check)
+        // 1. Get the physical right VR controller directly
+        InputDevice rightController = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+
+        // 2. Read the raw, un-cached state of the "A" button directly from the hardware
+        bool isPressing = false;
+        if (rightController.isValid)
+        {
+            rightController.TryGetFeatureValue(CommonUsages.primaryButton, out isPressing);
+        }
+
+        if (isPressing && !wasReversePressed)
+        {
             isReversed = !isReversed;
             stateText.text = isReversed ? "R" : "F";
         }
+
+        wasReversePressed = isPressing;
     }
 }
