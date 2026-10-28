@@ -472,8 +472,9 @@ public class Demo : MonoBehaviour
 
     public void Write()
     {
+        Debug.Log("we are inside of the write function");
         if (string.IsNullOrEmpty(selectedDeviceId)) return;
-
+        Debug.Log("about to make payload");
         byte[] payload = Encoding.ASCII.GetBytes(writeInput.text);
 
         try
