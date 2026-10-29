@@ -2,7 +2,6 @@
 	(version 7)
 	(lib (name "GVS_Library") (type "KiCad") (uri "${KIPRJMOD}/GVS_Library.kicad_sym") (options "") (descr ""))
 	(lib (name "MT3608") (type "KiCad") (uri "${KIPRJMOD}/MT3608/MT3608.kicad_sym") (options "") (descr ""))
-	(lib (name "TP4056") (type "KiCad") (uri "${KIPRJMOD}/TP4056/TP4056.kicad_sym") (options "") (descr ""))
 	(lib (name "TPS7A4901DGNT") (type "KiCad") (uri "${KIPRJMOD}/TPS7A4901DGNT/TPS7A4901DGNT.kicad_sym") (options "") (descr ""))
 	(lib (name "BK-18650-PC2") (type "KiCad") (uri "${KIPRJMOD}/BK_18650_PC2/BK-18650-PC2.kicad_sym") (options "") (descr ""))
 	(lib (name "219_2MSTR") (type "KiCad") (uri "${KIPRJMOD}/219_2MSTR/219-2MSTR.kicad_sym") (options "") (descr ""))
@@ -14,4 +13,5 @@
 	(lib (name "LTST-C190KGKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KGKT/LTST-C190KGKT.kicad_sym") (options "") (descr ""))
 	(lib (name "LTST-C190KRKT") (type "KiCad") (uri "${KIPRJMOD}/LTST_C190KRKT/LTST-C190KRKT.kicad_sym") (options "") (descr ""))
 	(lib (name "B3B_XH_A") (type "KiCad") (uri "${KIPRJMOD}/B3B_XH_A/B3B-XH-A.kicad_sym") (options "") (descr ""))
+	(lib (name "500SSP1S1M2QEA") (type "KiCad") (uri "${KIPRJMOD}/500SSP1S1M2QEA/500SSP1S1M2QEA.kicad_sym") (options "") (descr ""))
 )
