@@ -6,11 +6,8 @@ using UnityEngine;
 public class GVSController : MonoBehaviour
 {
     [Header("Tracking References")]
-    [Tooltip("The vehicle or moving platform carrying the player. Defaults to this GameObject if empty.")]
     public Transform motionSource;
     private Rigidbody motionRb;
-
-    [Tooltip("The VR Headset Camera (e.g. CenterEyeAnchor). Used solely for head orientation. Defaults to Camera.main if empty.")]
     public Transform headTransform;
 
     [Header("BLE Configuration")]
@@ -20,8 +17,8 @@ public class GVSController : MonoBehaviour
     public string notifyCharacteristicUuid = "19b10001-e8f2-537e-4f6c-d104768a1214";
     public string characteristicUuid = "19b10002-e8f2-537e-4f6c-d104768a1214";
 
-    [Tooltip("Target transmission rate in Hz (50 Hz is recommended for WinRT BLE stability; 100 Hz max).")]
-    [Range(20f, 100f)] public float sendRateHz = 50f;
+    [Tooltip("Maximum transmission rate in Hz. Writes are blocking, so the real rate is limited by the BLE link.")]
+    [Range(10f, 100f)] public float sendRateHz = 30f;
 
     [Header("GVS Motion Mapping (Roll Axis)")]
     public float accelDeadzone = 0.5f;
@@ -52,6 +49,12 @@ public class GVSController : MonoBehaviour
         public int frequency;
         public int amplitude;
 
+        public bool SameAs(GVSPacket o)
+        {
+            return command == o.command && direction == o.direction &&
+                   frequency == o.frequency && amplitude == o.amplitude;
+        }
+
         public void WriteToBuffer(byte[] buf)
         {
             buf[0] = command;
@@ -71,22 +74,23 @@ public class GVSController : MonoBehaviour
     private BLE.BLEScan activeScan;
     private Thread bleConnectThread;
     private Thread bleSenderThread;
+    private readonly ManualResetEventSlim shutdownEvent = new ManualResetEventSlim(false);
 
     private Vector3 lastMotionPosition;
     private Vector3 lastMotionVelocity;
     private int warmupTicks = 0;
 
-    // Concurrency & offloaded sending pipeline
     private readonly object packetLock = new object();
     private GVSPacket latestPacket;
     private bool hasNewPacketToSend = false;
 
     private volatile bool isConnectedAndReady = false;
     private volatile bool isRunning = true;
+    private int shutdownStarted = 0;
+    private int sendIntervalMs = 33;
 
     void Awake()
     {
-        // Keep physics running smoothly at default or matched step
         if (sendRateHz > 50f)
         {
             float targetFixedDt = 1f / sendRateHz;
@@ -101,9 +105,7 @@ public class GVSController : MonoBehaviour
         motionRb = motionSource.GetComponentInParent<Rigidbody>();
 
         if (headTransform == null)
-        {
             headTransform = (Camera.main != null) ? Camera.main.transform : motionSource;
-        }
 
         ResetKinematicsState();
 
@@ -132,7 +134,11 @@ public class GVSController : MonoBehaviour
     {
         if (ble == null) ble = new BLE();
 
+        Interlocked.Exchange(ref shutdownStarted, 0);
         isRunning = true;
+        shutdownEvent.Reset();
+        sendIntervalMs = Mathf.Max(10, Mathf.RoundToInt(1000f / sendRateHz));
+
         bleConnectThread = new Thread(BleConnectionRoutine) { IsBackground = true };
         bleConnectThread.Start();
     }
@@ -141,35 +147,42 @@ public class GVSController : MonoBehaviour
     {
         try
         {
-            // 1. Device scan fallback if deviceId is empty
+            // Fallback scan if device ID is not hardcoded
             if (string.IsNullOrEmpty(deviceId))
             {
                 Debug.Log("[GVS] Scanning for: " + targetDeviceName);
-                AutoResetEvent foundSignal = new AutoResetEvent(false);
-                string discoveredId = null;
-
-                activeScan = BLE.ScanDevices();
-                activeScan.Found = (id, name) =>
+                using (AutoResetEvent foundSignal = new AutoResetEvent(false))
                 {
-                    if (!string.IsNullOrEmpty(name) && name.IndexOf(targetDeviceName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    string discoveredId = null;
+
+                    activeScan = BLE.ScanDevices();
+                    activeScan.Found = (id, name) =>
                     {
-                        discoveredId = id;
-                        activeScan.Cancel();
-                        foundSignal.Set();
-                    }
-                };
-                foundSignal.WaitOne(8000);
-                if (activeScan != null) activeScan.Cancel();
+                        if (!string.IsNullOrEmpty(name) && name.IndexOf(targetDeviceName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            discoveredId = id;
+                            activeScan.Cancel();
+                            foundSignal.Set();
+                        }
+                    };
 
-                if (string.IsNullOrEmpty(discoveredId))
-                {
-                    Debug.LogError("[GVS] Could not find device: " + targetDeviceName);
-                    return;
+                    foundSignal.WaitOne(8000);
+                    if (activeScan != null) activeScan.Cancel();
+
+                    if (!isRunning) return;
+
+                    if (string.IsNullOrEmpty(discoveredId))
+                    {
+                        Debug.LogError("[GVS] Could not find device: " + targetDeviceName);
+                        return;
+                    }
+                    deviceId = discoveredId;
                 }
-                deviceId = discoveredId;
             }
 
-            // 2. Discover Services
+            if (!isRunning) return;
+
+            // Discover Services
             List<string> services = BLE.ScanAndGetServices(deviceId);
             string matchedService = MatchUuid(serviceUuid, services);
             if (string.IsNullOrEmpty(matchedService))
@@ -179,7 +192,9 @@ public class GVSController : MonoBehaviour
             }
             serviceUuid = matchedService;
 
-            // 3. Discover Characteristics
+            if (!isRunning) return;
+
+            // Discover Characteristics
             Dictionary<string, string> charMap = BLE.ScanAndGetCharacteristics(deviceId, serviceUuid);
             string matchedWriteChar = MatchUuid(characteristicUuid, charMap.Values);
             if (string.IsNullOrEmpty(matchedWriteChar))
@@ -190,12 +205,10 @@ public class GVSController : MonoBehaviour
             characteristicUuid = matchedWriteChar;
 
             string matchedNotifyChar = MatchUuid(notifyCharacteristicUuid, charMap.Values);
-            if (!string.IsNullOrEmpty(matchedNotifyChar))
-                notifyCharacteristicUuid = matchedNotifyChar;
-            else
-                notifyCharacteristicUuid = matchedWriteChar;
+            notifyCharacteristicUuid = !string.IsNullOrEmpty(matchedNotifyChar) ? matchedNotifyChar : matchedWriteChar;
 
-            // 4. Native Connect via Notify pipe
+            if (!isRunning) return;
+
             Debug.Log($"[GVS] Native connecting to: {notifyCharacteristicUuid}");
             bool connected = ble.Connect(deviceId, serviceUuid, new string[] { notifyCharacteristicUuid });
             if (!connected)
@@ -205,36 +218,45 @@ public class GVSController : MonoBehaviour
             }
 
             Thread.Sleep(200);
+            if (!isRunning) return;
 
-            // 5. Send CMD_START
+            // Handshake (blocking: returns once Windows confirms the write)
             byte[] initBuf = new byte[10];
             new GVSPacket { command = CMD_START }.WriteToBuffer(initBuf);
-            BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, initBuf);
+            BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, initBuf, true);
+
+            if (!isRunning) return;
 
             isConnectedAndReady = true;
-            Debug.Log($"[GVS] Pipeline Active! Streaming on dedicated thread.");
+            Debug.Log("[GVS] Pipeline Active! Streaming on dedicated thread.");
 
-            // 6. Launch independent sender thread (Never blocks Unity main thread)
             bleSenderThread = new Thread(BleSenderLoop) { IsBackground = true };
             bleSenderThread.Start();
         }
         catch (Exception e)
         {
-            Debug.LogError("[GVS] BLE Init Exception: " + e.Message);
+            if (isRunning)
+            {
+                Debug.LogError("[GVS] BLE Init Exception: " + e.Message);
+            }
         }
     }
 
-    // Runs entirely off the main thread at target Hz
+    // All writes are BLOCKING. The loop can never get ahead of the BLE link,
+    // so there is no queue of pending native operations, and the packet we send
+    // is always the freshest one.
     private void BleSenderLoop()
     {
         byte[] workerBuffer = new byte[10];
+        GVSPacket lastSent = default;
+        bool hasLastSent = false;
 
         while (isRunning && isConnectedAndReady)
         {
-            int sleepIntervalMs = Mathf.Max(10, Mathf.RoundToInt(1000f / sendRateHz));
-            Thread.Sleep(sleepIntervalMs);
+            if (shutdownEvent.Wait(sendIntervalMs))
+                break;
 
-            GVSPacket packetToSend = default; // <-- Initialize here to resolve CS0165
+            GVSPacket packetToSend = default;
             bool shouldSend = false;
 
             lock (packetLock)
@@ -247,16 +269,26 @@ public class GVSController : MonoBehaviour
                 }
             }
 
-            if (shouldSend)
+            if (!shouldSend || !isRunning) continue;
+
+            // Don't resend identical data (e.g. zero amplitude while idle)
+            if (hasLastSent && packetToSend.SameAs(lastSent)) continue;
+
+            try
             {
-                try
+                packetToSend.WriteToBuffer(workerBuffer);
+                bool ok = BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, workerBuffer, true);
+                if (ok)
                 {
-                    packetToSend.WriteToBuffer(workerBuffer);
-                    BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, workerBuffer);
+                    lastSent = packetToSend;
+                    hasLastSent = true;
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                if (isRunning)
                 {
-                    Debug.LogWarning("[GVS] Async write hiccup: " + ex.Message);
+                    Debug.LogWarning("[GVS] Write hiccup: " + ex.Message);
                 }
             }
         }
@@ -327,7 +359,6 @@ public class GVSController : MonoBehaviour
             smoothedLateralAccel = rawLateralAccel;
         }
 
-        // Enqueue next packet for the background sender thread
         if (isConnectedAndReady)
         {
             GVSPacket pkt = ProcessMovement(smoothedLateralAccel);
@@ -392,32 +423,71 @@ public class GVSController : MonoBehaviour
         return null;
     }
 
-    void OnApplicationQuit()
-    {
+    // ---------------------------------------------------------------
+    // Shutdown: strictly ordered, runs once.
+    //   1. stop producing / sending
+    //   2. WAIT until the sender thread is out of native code
+    //   3. send STOP (blocking, confirmed)
+    //   4. stop connect thread
+    //   5. only then call native Quit()
+    // ---------------------------------------------------------------
+    void OnApplicationQuit() { ShutdownBle(); }
+    void OnDestroy() { ShutdownBle(); }
+
+    private void ShutdownBle()
+    {// hi
+        if (Interlocked.Exchange(ref shutdownStarted, 1) == 1) return;
+        Debug.Log("[GVS] Shutdown: begin");
+
         isRunning = false;
         isConnectedAndReady = false;
+        shutdownEvent.Set();
 
-        if (activeScan != null) activeScan.Cancel();
+        // Everything that touches native code runs on a worker thread, so the
+        // Unity main thread can never be frozen by the DLL. The main thread
+        // waits at most 3 s, then moves on no matter what.
+        BLE bleToClose = ble;
+        ble = null;
+        string dev = deviceId, svc = serviceUuid, chr = characteristicUuid;
+        Thread sender = bleSenderThread;
+        Thread connector = bleConnectThread;
+        BLE.BLEScan scan = activeScan;
 
-        // Send STOP command
-        try
+        Thread teardown = new Thread(() =>
         {
-            byte[] stopBuf = new byte[10];
-            new GVSPacket { command = CMD_STOP }.WriteToBuffer(stopBuf);
-            BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, stopBuf);
-        }
-        catch { }
+            try
+            {
+                try { if (scan != null) scan.Cancel(); } catch { }
 
-        if (bleSenderThread != null && bleSenderThread.IsAlive)
-        {
-            try { bleSenderThread.Abort(); } catch { }
-        }
+                bool senderStopped = true;
+                if (sender != null && sender.IsAlive)
+                    senderStopped = sender.Join(1500);
+                Debug.Log("[GVS] Shutdown: sender stopped = " + senderStopped);
 
-        if (bleConnectThread != null && bleConnectThread.IsAlive)
-        {
-            try { bleConnectThread.Abort(); } catch { }
-        }
+                if (senderStopped && bleToClose != null && bleToClose.isConnected && !string.IsNullOrEmpty(dev))
+                {
+                    byte[] stopBuf = new byte[10];
+                    new GVSPacket { command = CMD_STOP }.WriteToBuffer(stopBuf);
+                    BLE.WritePackage(dev, svc, chr, stopBuf, true);
+                    Debug.Log("[GVS] Shutdown: STOP write confirmed");
+                }
 
-        if (ble != null) ble.Close();
+                if (connector != null && connector.IsAlive) connector.Join(500);
+
+                Debug.Log("[GVS] Shutdown: calling native Quit()");
+                if (bleToClose != null) bleToClose.Close();
+                Debug.Log("[GVS] Shutdown: native Quit() returned - BLE cleanly closed");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[GVS] Shutdown exception: " + e.Message);
+            }
+        })
+        { IsBackground = true };
+
+        teardown.Start();
+
+        if (!teardown.Join(3000))
+            Debug.LogWarning("[GVS] Shutdown: native teardown still blocked after 3 s - abandoning it so Unity can exit.");
     }
 }
