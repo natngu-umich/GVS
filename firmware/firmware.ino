@@ -20,7 +20,6 @@ TaskHandle_t ReadCurrentTaskHandle = NULL;
 
 // Declare objects
 Adafruit_MCP4725 dac;
-Adafruit_INA219 ina219;
 
 // Tasks!
 void BlinkTask(void *parameter) {
@@ -93,7 +92,7 @@ void DACTask(void *parameter) {
 
 void ReadCurrentTask(void *parameter) {
   for (;;) { // Infinite loop
-    // Serial.println(ina219.getCurrent_mA());
+    Serial.println(readCurrent_uA());    
     vTaskDelay(50 / portTICK_PERIOD_MS);
   }
 }
@@ -105,9 +104,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
 
   // INA219 Current Sensor Setup
-  Wire.setClock(400000);
-  ina219.begin();
-  ina219.setCalibration_16V_400mA();
+  ina219Init();
 
   // MCP4725 External DAC Setup
   Wire1.begin(SDA_2, SCL_2);
