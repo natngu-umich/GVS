@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
-public class BLE : IDisposable
+public class BLE
 {
     public class Impl
     {
@@ -104,10 +104,6 @@ public class BLE : IDisposable
     public static BLEScan currentScan = new BLEScan();
     public bool isConnected = false;
 
-    // Thread-static reusable structure to eliminate GC pressure at 50-100 Hz
-    [ThreadStatic]
-    private static Impl.BLEData txPackageCache;
-
     public class BLEScan
     {
         public delegate void FoundDel(string deviceId, string deviceName);
@@ -129,10 +125,8 @@ public class BLE : IDisposable
 
     public static BLEScan ScanDevices()
     {
-        if (scanThread == Thread.CurrentThread)
-            throw new InvalidOperationException("A new scan cannot be started from a callback of the previous scan.");
         if (scanThread != null && scanThread.IsAlive)
-            throw new InvalidOperationException("The previous scan is still running.");
+            throw new InvalidOperationException("Previous scan is still running.");
 
         currentScan.cancelled = false;
         currentScan.Found = null;
@@ -149,8 +143,7 @@ public class BLE : IDisposable
 
                 while (Impl.PollDevice(ref res, true) != Impl.ScanStatus.FINISHED)
                 {
-                    if (currentScan.cancelled)
-                        break;
+                    if (currentScan.cancelled) break;
 
                     if (res.nameUpdated && !string.IsNullOrEmpty(res.name))
                     {
@@ -166,7 +159,7 @@ public class BLE : IDisposable
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("[BLE] Scan worker encountered exception: " + ex.Message);
+                Debug.LogWarning("[BLE] Scan worker exception: " + ex.Message);
             }
             finally
             {
@@ -218,28 +211,20 @@ public class BLE : IDisposable
         foreach (string characteristicUuid in characteristicUuids)
         {
             if (string.IsNullOrEmpty(characteristicUuid)) continue;
-
             bool res = Impl.SubscribeCharacteristic(deviceId, serviceUuid, characteristicUuid, true);
-            if (!res)
-                return false;
+            if (!res) return false;
         }
         return true;
     }
 
-    /// <summary>
-    /// Connects directly via subscription without repeating redundant GATT service/characteristic scans.
-    /// </summary>
     public bool Connect(string deviceId, string serviceUuid, string[] characteristicUuids)
     {
-        if (isConnected)
-            return false;
+        if (isConnected) return false;
 
-        Debug.Log("[BLE] Subscribing to target characteristics...");
         bool result = Subscribe(deviceId, serviceUuid, characteristicUuids);
         if (!result)
         {
-            string err = GetError();
-            Debug.LogError("[BLE] Subscription failed. Last WinRT error: " + err);
+            Debug.LogError("[BLE] Subscribe failed: " + GetError());
             return false;
         }
 
@@ -247,64 +232,31 @@ public class BLE : IDisposable
         return true;
     }
 
-    public static bool WritePackage(string deviceId, string serviceUuid, string characteristicUuid, byte[] data)
+    public static bool WritePackage(string deviceId, string serviceUuid, string characteristicUuid, byte[] data, bool block = true)
     {
         if (data == null || data.Length > 512)
-            throw new ArgumentOutOfRangeException("Payload must be non-null and <= 512 bytes.");
+            throw new ArgumentOutOfRangeException("Data must be <= 512 bytes.");
 
-        // Allocate thread-local buffer once per thread to avoid GC spikes
-        if (txPackageCache.buf == null)
-        {
-            txPackageCache.buf = new byte[512];
-        }
+        Impl.BLEData packageSend;
+        packageSend.buf = new byte[512];
+        packageSend.size = (short)data.Length;
+        packageSend.deviceId = deviceId;
+        packageSend.serviceUuid = serviceUuid;
+        packageSend.characteristicUuid = characteristicUuid;
 
-        txPackageCache.deviceId = deviceId;
-        txPackageCache.serviceUuid = serviceUuid;
-        txPackageCache.characteristicUuid = characteristicUuid;
-        txPackageCache.size = (short)data.Length;
+        Buffer.BlockCopy(data, 0, packageSend.buf, 0, data.Length);
 
-        Buffer.BlockCopy(data, 0, txPackageCache.buf, 0, data.Length);
-
-        // Send with non-blocking write to prevent stalling caller
-        return Impl.SendData(in txPackageCache, false);
-    }
-
-    public static byte[] ReadBytes()
-    {
-        Impl.BLEData packageReceived;
-        bool result = Impl.PollData(out packageReceived, true);
-
-        if (result && packageReceived.size > 0)
-        {
-            if (packageReceived.size > 512)
-                throw new ArgumentOutOfRangeException("Package received exceeds 512 bytes.");
-
-            byte[] actualData = new byte[packageReceived.size];
-            Buffer.BlockCopy(packageReceived.buf, 0, actualData, 0, packageReceived.size);
-            return actualData;
-        }
-
-        return Array.Empty<byte>();
+        return Impl.SendData(in packageSend, block);
     }
 
     public void Close()
     {
-        if (isConnected)
-        {
-            isConnected = false;
-        }
-
+        isConnected = false;
         try
         {
             Impl.Quit();
         }
         catch { }
-    }
-
-    public void Dispose()
-    {
-        Close();
-        GC.SuppressFinalize(this);
     }
 
     public static string GetError()
@@ -317,7 +269,7 @@ public class BLE : IDisposable
         }
         catch
         {
-            return "Unable to retrieve error buffer";
+            return "Unable to retrieve error";
         }
     }
 }
