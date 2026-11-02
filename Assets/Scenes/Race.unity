@@ -7223,6 +7223,7 @@ GameObject:
   - component: {fileID: 616618566}
   - component: {fileID: 616618565}
   - component: {fileID: 616618568}
+  - component: {fileID: 616618569}
   m_Layer: 6
   m_Name: PlayerCar
   m_TagString: Untagged
@@ -7385,6 +7386,38 @@ MonoBehaviour:
   index: 0
   lastCp: {fileID: 0}
   startTime: 0
+--- !u!114 &616618569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 616618560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8be754cde44775443b7d34c4a1e13536, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  motionSource: {fileID: 616618561}
+  headTransform: {fileID: 1188525360}
+  targetDeviceName: ESP32-Brocoli
+  deviceId: 
+  serviceUuid: 19b10000-e8f2-537e-4f6c-d104768a1214
+  characteristicUuid: 19b10002-e8f2-537e-4f6c-d104768a1214
+  sendRateHz: 100
+  subscribeToNotifications: 0
+  accelDeadzone: 0.5
+  maxExpectedAccel: 15
+  useSmoothing: 1
+  smoothingSpeed: 50
+  invertDirection: 0
+  maxAmplitudeMicroAmps: 3000
+  defaultFrequencyMHz: 0
+  rawLateralAccel: 0
+  smoothedLateralAccel: 0
+  currentOutputAmplitude: 0
+  currentOutputDirection: 0
+  isBleReady: 0
 --- !u!1 &622192817
 GameObject:
   m_ObjectHideFlags: 0
