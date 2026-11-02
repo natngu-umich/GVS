@@ -12,10 +12,11 @@ public class GVSController : MonoBehaviour
 
     [Header("BLE Configuration")]
     public string targetDeviceName = "ESP32-Brocoli";
-    public string deviceId = "BluetoothLE#BluetoothLE0c:dd:24:f8:a7:40-20:50:0d:d9:81:92";
+    public string deviceId; // = "BluetoothLE#BluetoothLE0c:dd:24:f8:a7:40-20:50:0d:d9:81:92";
     public string serviceUuid = "19b10000-e8f2-537e-4f6c-d104768a1214";
     public string notifyCharacteristicUuid = "19b10001-e8f2-537e-4f6c-d104768a1214";
     public string characteristicUuid = "19b10002-e8f2-537e-4f6c-d104768a1214";
+    public string targetMacAddress = "20:50:0d:d9:81:92";
 
     [Tooltip("Maximum transmission rate in Hz. Writes are blocking, so the real rate is limited by the BLE link.")]
     [Range(10f, 100f)] public float sendRateHz = 30f;
