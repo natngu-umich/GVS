@@ -5,41 +5,32 @@ using UnityEngine;
 
 public class GVSController : MonoBehaviour
 {
-    [Header("Tracking Target")]
-    [Tooltip("Leave empty to track the GameObject this script is attached to, or drag a target here.")]
-    public Transform targetTransform;
-    private Rigidbody targetRb;
+    [Header("Tracking References")]
+    [Tooltip("The vehicle or moving platform carrying the player. Defaults to this GameObject if empty.")]
+    public Transform motionSource;
+    private Rigidbody motionRb;
+
+    [Tooltip("The VR Headset Camera (e.g. CenterEyeAnchor). Used solely for head orientation. Defaults to Camera.main if empty.")]
+    public Transform headTransform;
 
     [Header("BLE Configuration")]
-    
-    [Tooltip("Advertised BLE name of your ESP32 (e.g., 'ESP32-Brocoli'). Used to auto-find deviceId if deviceId is blank.")]
     public string targetDeviceName = "ESP32-Brocoli";
-    
-    [Tooltip("Windows BLE Device ID (e.g., BluetoothLE#...). Leave blank to auto-scan by targetDeviceName.")]
-    public string deviceId = "";
+    public string deviceId = "BluetoothLE#BluetoothLE0c:dd:24:f8:a7:40-20:50:0d:d9:81:92";
     public string serviceUuid = "19b10000-e8f2-537e-4f6c-d104768a1214";
+    public string notifyCharacteristicUuid = "19b10001-e8f2-537e-4f6c-d104768a1214";
     public string characteristicUuid = "19b10002-e8f2-537e-4f6c-d104768a1214";
 
-    [Tooltip("Target transmission rate in Hz (100 Hz = 10ms intervals).")]
-    [Range(10f, 120f)] public float sendRateHz = 100f;
-    
-    [Tooltip("Only enable if your ESP32 characteristic also sends Notify packets back to Unity.")]
-    public bool subscribeToNotifications = false;
+    [Tooltip("Target transmission rate in Hz (50 Hz is recommended for WinRT BLE stability; 100 Hz max).")]
+    [Range(20f, 100f)] public float sendRateHz = 50f;
 
     [Header("GVS Motion Mapping (Roll Axis)")]
-    [Tooltip("Minimum lateral acceleration (m/s^2) before GVS activates.")]
     public float accelDeadzone = 0.5f;
-    [Tooltip("Lateral acceleration (m/s^2) that maps to maximum GVS current.")]
     public float maxExpectedAccel = 15.0f;
-    [Tooltip("Enable low-pass filtering to remove single-frame collision spikes.")]
     public bool useSmoothing = true;
-    [Tooltip("Filter speed (50 = ~20ms response time for 100Hz tracking).")]
     [Range(5f, 100f)] public float smoothingSpeed = 50f;
-    [Tooltip("Flip left/right direction bit if electrode polarity is reversed.")]
     public bool invertDirection = false;
 
     [Header("Hardware Limits")]
-    [Tooltip("Maximum safe current amplitude in microamps (e.g., 3000 uA = 3.0 mA).")]
     public int maxAmplitudeMicroAmps = 3000;
     public int defaultFrequencyMHz = 0;
 
@@ -50,30 +41,25 @@ public class GVSController : MonoBehaviour
     public byte currentOutputDirection;
     public bool isBleReady = false;
 
-    // Command Opcodes
-    public const byte CMD_STOP  = 0;
+    public const byte CMD_STOP = 0;
     public const byte CMD_START = 1;
-    public const byte CMD_DATA  = 2;
+    public const byte CMD_DATA = 2;
 
-    // 10-byte binary packet matching C/C++ struct alignment on ESP32
     public struct GVSPacket
     {
-        public byte command;     // 0 = STOP, 1 = START, 2 = DATA (1 byte)
-        public byte direction;   // 1 = Left-to-Right (+Roll), 0 = Right-to-Left (-Roll) (1 byte)
-        public int frequency;    // mHz (4 bytes, Little-Endian)
-        public int amplitude;    // uA (4 bytes, Little-Endian)
+        public byte command;
+        public byte direction;
+        public int frequency;
+        public int amplitude;
 
-        // Zero-allocation serialization into a pre-allocated 10-byte buffer
         public void WriteToBuffer(byte[] buf)
         {
             buf[0] = command;
             buf[1] = direction;
-
             buf[2] = (byte)(frequency & 0xFF);
             buf[3] = (byte)((frequency >> 8) & 0xFF);
             buf[4] = (byte)((frequency >> 16) & 0xFF);
             buf[5] = (byte)((frequency >> 24) & 0xFF);
-
             buf[6] = (byte)(amplitude & 0xFF);
             buf[7] = (byte)((amplitude >> 8) & 0xFF);
             buf[8] = (byte)((amplitude >> 16) & 0xFF);
@@ -81,45 +67,49 @@ public class GVSController : MonoBehaviour
         }
     }
 
-    // Internal state
     private BLE ble;
     private BLE.BLEScan activeScan;
-    private Thread bleWorkerThread;
-    private readonly byte[] txBuffer = new byte[10];
+    private Thread bleConnectThread;
+    private Thread bleSenderThread;
+    private readonly ManualResetEventSlim shutdownEvent = new ManualResetEventSlim(false);
 
-    private Vector3 lastWorldPosition;
-    private Vector3 lastWorldVelocity;
-    private int warmupTicks = 0; // Requires 2 ticks to seed position -> velocity -> acceleration cleanly
-    private float nextBleSendTime = 0f;
+    private Vector3 lastMotionPosition;
+    private Vector3 lastMotionVelocity;
+    private int warmupTicks = 0;
 
-    private volatile bool bleConnectedInternal = false;
-    private volatile bool pendingStartPacket = false;
+    // Concurrency & offloaded sending pipeline
+    private readonly object packetLock = new object();
+    private GVSPacket latestPacket;
+    private bool hasNewPacketToSend = false;
+
+    private volatile bool isConnectedAndReady = false;
+    private volatile bool isRunning = true;
 
     void Awake()
     {
-        // Ensure Unity's FixedUpdate runs fast enough to support 100 Hz sampling
         if (sendRateHz > 50f)
         {
             float targetFixedDt = 1f / sendRateHz;
             if (Time.fixedDeltaTime > targetFixedDt)
-            {
                 Time.fixedDeltaTime = targetFixedDt;
-            }
         }
     }
 
     void Start()
     {
-        if (targetTransform == null)
-            targetTransform = this.transform;
+        if (motionSource == null) motionSource = this.transform;
+        motionRb = motionSource.GetComponentInParent<Rigidbody>();
 
-        targetRb = targetTransform.GetComponentInParent<Rigidbody>();
+        if (headTransform == null)
+        {
+            headTransform = (Camera.main != null) ? Camera.main.transform : motionSource;
+        }
+
         ResetKinematicsState();
 
-        // Auto-connect if a device ID or target device name is configured
         if (!string.IsNullOrEmpty(deviceId) || !string.IsNullOrEmpty(targetDeviceName))
         {
-            InitComm(deviceId, serviceUuid, characteristicUuid);
+            InitComm();
         }
     }
 
@@ -128,189 +118,228 @@ public class GVSController : MonoBehaviour
         warmupTicks = 0;
         rawLateralAccel = 0f;
         smoothedLateralAccel = 0f;
-        if (targetTransform != null)
+        if (motionSource != null)
         {
-            lastWorldPosition = targetTransform.position;
-            lastWorldVelocity = HasActiveRigidbody()
-                ? targetRb.GetPointVelocity(targetTransform.position)
+            lastMotionPosition = motionSource.position;
+            Vector3 evalPos = (headTransform != null) ? headTransform.position : motionSource.position;
+            lastMotionVelocity = (motionRb != null && !motionRb.isKinematic)
+                ? motionRb.GetPointVelocity(evalPos)
                 : Vector3.zero;
         }
     }
 
-    private bool HasActiveRigidbody()
+    public void InitComm()
     {
-        return targetRb != null && !targetRb.isKinematic;
-    }
-
-    /// <summary>
-    /// Initializes BLE connection. Works with an explicit Windows deviceId OR auto-scans for targetDeviceName.
-    /// </summary>
-    public void InitComm(string devId, string servUuid, string charUuid)
-    {
-        deviceId = devId;
-        serviceUuid = servUuid;
-        characteristicUuid = charUuid;
-
         if (ble == null) ble = new BLE();
 
-        bleWorkerThread = new Thread(BleConnectionRoutine) { IsBackground = true };
-        bleWorkerThread.Start();
+        isRunning = true;
+        shutdownEvent.Reset();
+
+        bleConnectThread = new Thread(BleConnectionRoutine) { IsBackground = true };
+        bleConnectThread.Start();
     }
 
     private void BleConnectionRoutine()
     {
         try
         {
-            // Step 1: If no Windows deviceId was given, scan and find it by targetDeviceName
+            // 1. Device scan fallback if deviceId is empty
             if (string.IsNullOrEmpty(deviceId))
             {
-                Debug.Log("[GVS] Scanning for BLE device matching name: " + targetDeviceName);
-                AutoResetEvent foundSignal = new AutoResetEvent(false);
-                string discoveredId = null;
-
-                activeScan = BLE.ScanDevices();
-                activeScan.Found = (id, name) =>
+                Debug.Log("[GVS] Scanning for: " + targetDeviceName);
+                using (AutoResetEvent foundSignal = new AutoResetEvent(false))
                 {
-                    if (!string.IsNullOrEmpty(name) &&
-                        name.IndexOf(targetDeviceName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    string discoveredId = null;
+
+                    activeScan = BLE.ScanDevices();
+                    activeScan.Found = (id, name) =>
                     {
-                        discoveredId = id;
-                        activeScan.Cancel();
-                        foundSignal.Set();
+                        if (!string.IsNullOrEmpty(name) && name.IndexOf(targetDeviceName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            discoveredId = id;
+                            activeScan.Cancel();
+                            foundSignal.Set();
+                        }
+                    };
+
+                    foundSignal.WaitOne(8000);
+                    if (activeScan != null) activeScan.Cancel();
+
+                    if (!isRunning) return;
+
+                    if (string.IsNullOrEmpty(discoveredId))
+                    {
+                        Debug.LogError("[GVS] Could not find device: " + targetDeviceName);
+                        return;
                     }
-                };
-
-                // Wait up to 10 seconds to find the ESP32
-                foundSignal.WaitOne(10000);
-                if (activeScan != null) activeScan.Cancel();
-
-                if (string.IsNullOrEmpty(discoveredId))
-                {
-                    Debug.LogError("[GVS] Could not find BLE device named: " + targetDeviceName);
-                    return;
+                    deviceId = discoveredId;
                 }
-
-                deviceId = discoveredId;
-                Debug.Log("[GVS] Found target device! ID: " + deviceId);
-                Thread.Sleep(200); // Allow scan thread to close cleanly
             }
 
-            // Step 2: Scan Services and match UUID (handles curly braces {} and case differences automatically)
+            if (!isRunning) return;
+
+            // 2. Discover Services
             List<string> services = BLE.ScanAndGetServices(deviceId);
             string matchedService = MatchUuid(serviceUuid, services);
             if (string.IsNullOrEmpty(matchedService))
             {
-                Debug.LogError("[GVS] Service UUID not found on device. Searched for: " + serviceUuid);
+                Debug.LogError("[GVS] Service UUID not found: " + serviceUuid);
                 return;
             }
             serviceUuid = matchedService;
 
-            // Step 3: Scan Characteristics and match UUID (populates BleWinrtDll internal cache for WritePackage)
+            if (!isRunning) return;
+
+            // 3. Discover Characteristics
             Dictionary<string, string> charMap = BLE.ScanAndGetCharacteristics(deviceId, serviceUuid);
-            string matchedChar = MatchUuid(characteristicUuid, charMap.Values);
-            if (string.IsNullOrEmpty(matchedChar))
+            string matchedWriteChar = MatchUuid(characteristicUuid, charMap.Values);
+            if (string.IsNullOrEmpty(matchedWriteChar))
             {
-                Debug.LogError("[GVS] Characteristic UUID not found in service. Searched for: " + characteristicUuid);
+                Debug.LogError("[GVS] Write Characteristic not found: " + characteristicUuid);
                 return;
             }
-            characteristicUuid = matchedChar;
+            characteristicUuid = matchedWriteChar;
 
-            // Step 4: Optional Subscribe (skipped by default so Write-only characteristics don't fail)
-            if (subscribeToNotifications)
+            string matchedNotifyChar = MatchUuid(notifyCharacteristicUuid, charMap.Values);
+            notifyCharacteristicUuid = !string.IsNullOrEmpty(matchedNotifyChar) ? matchedNotifyChar : matchedWriteChar;
+
+            if (!isRunning) return;
+
+            // 4. Native Connect via Notify pipe
+            Debug.Log($"[GVS] Native connecting to: {notifyCharacteristicUuid}");
+            bool connected = ble.Connect(deviceId, serviceUuid, new string[] { notifyCharacteristicUuid });
+            if (!connected)
             {
-                bool subOk = BLE.Subscribe(deviceId, serviceUuid, new string[] { characteristicUuid });
-                if (!subOk)
-                    Debug.LogWarning("[GVS] Subscribe returned false (characteristic may be Write-only). Continuing with Write mode.");
+                Debug.LogError("[GVS] ble.Connect returned false.");
+                return;
             }
 
-            ble.isConnected = true;
-            pendingStartPacket = true;
-            bleConnectedInternal = true;
-            Debug.Log($"[GVS] BLE Ready! Service: {serviceUuid} | Characteristic: {characteristicUuid}");
+            Thread.Sleep(200);
+            if (!isRunning) return;
+
+            // 5. Send CMD_START handshake
+            byte[] initBuf = new byte[10];
+            new GVSPacket { command = CMD_START }.WriteToBuffer(initBuf);
+            BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, initBuf);
+
+            isConnectedAndReady = true;
+            Debug.Log("[GVS] Pipeline Active! Streaming on dedicated thread.");
+
+            // 6. Launch independent sender thread
+            bleSenderThread = new Thread(BleSenderLoop) { IsBackground = true };
+            bleSenderThread.Start();
         }
         catch (Exception e)
         {
-            Debug.LogError("[GVS] BLE initialization exception: " + e.Message);
+            if (isRunning)
+            {
+                Debug.LogError("[GVS] BLE Init Exception: " + e.Message);
+            }
         }
     }
 
-    private static string CleanUuid(string uuid)
+    private void BleSenderLoop()
     {
-        return string.IsNullOrEmpty(uuid) ? "" : uuid.Trim().Trim('{', '}').ToLowerInvariant();
-    }
+        byte[] workerBuffer = new byte[10];
 
-    private static string MatchUuid(string target, IEnumerable<string> candidates)
-    {
-        string cleanTarget = CleanUuid(target);
-        foreach (string c in candidates)
+        while (isRunning && isConnectedAndReady)
         {
-            if (CleanUuid(c) == cleanTarget)
-                return c; // Return the exact string format WinRT expects
+            int sleepIntervalMs = Mathf.Max(10, Mathf.RoundToInt(1000f / sendRateHz));
+
+            // Replaces Thread.Sleep to exit instantly when Play Mode stops
+            if (shutdownEvent.Wait(sleepIntervalMs))
+            {
+                break;
+            }
+
+            GVSPacket packetToSend = default;
+            bool shouldSend = false;
+
+            lock (packetLock)
+            {
+                if (hasNewPacketToSend)
+                {
+                    packetToSend = latestPacket;
+                    hasNewPacketToSend = false;
+                    shouldSend = true;
+                }
+            }
+
+            if (shouldSend && isRunning)
+            {
+                try
+                {
+                    packetToSend.WriteToBuffer(workerBuffer);
+                    BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, workerBuffer);
+                }
+                catch (Exception ex)
+                {
+                    if (isRunning)
+                    {
+                        Debug.LogWarning("[GVS] Async write hiccup: " + ex.Message);
+                    }
+                }
+            }
         }
-        return null;
     }
 
-    // Physics-driven objects (non-kinematic Rigidbody) are sampled in FixedUpdate at 100 Hz
     void FixedUpdate()
     {
-        if (targetTransform == null) return;
-        if (targetRb == null) targetRb = targetTransform.GetComponentInParent<Rigidbody>();
+        if (motionSource == null) return;
+        if (motionRb == null) motionRb = motionSource.GetComponentInParent<Rigidbody>();
 
-        if (HasActiveRigidbody())
+        // Physics-driven kinematics calculated strictly during FixedUpdate
+        if (motionRb != null && !motionRb.isKinematic)
         {
-            // GetPointVelocity includes angular velocity (w x r) if placed on a child seat/camera
-            Vector3 currentVel = targetRb.GetPointVelocity(targetTransform.position);
-            StepKinematicsAndTransmit(currentVel, Time.fixedDeltaTime);
+            Vector3 evalPos = (headTransform != null) ? headTransform.position : motionSource.position;
+            Vector3 currentVel = motionRb.GetPointVelocity(evalPos);
+            StepKinematics(currentVel, Time.fixedDeltaTime);
         }
     }
 
-    // Transform-driven objects (no Rigidbody or kinematic Rigidbody) are sampled in LateUpdate
-    // after all Update() movement and VR tracking finishes for the current frame.
     void LateUpdate()
     {
-        if (targetTransform == null) return;
+        if (motionSource == null) return;
 
-        if (!HasActiveRigidbody())
+        // Transform/kinematic motion calculated during LateUpdate
+        if (motionRb == null || motionRb.isKinematic)
         {
             float dt = Time.deltaTime;
             if (dt <= 1e-6f) return;
 
             if (warmupTicks == 0)
             {
-                lastWorldPosition = targetTransform.position;
+                lastMotionPosition = motionSource.position;
                 warmupTicks = 1;
                 return;
             }
 
-            Vector3 currentVel = (targetTransform.position - lastWorldPosition) / dt;
-            lastWorldPosition = targetTransform.position;
+            Vector3 currentVel = (motionSource.position - lastMotionPosition) / dt;
+            lastMotionPosition = motionSource.position;
 
-            StepKinematicsAndTransmit(currentVel, dt);
+            StepKinematics(currentVel, dt);
         }
     }
 
-    private void StepKinematicsAndTransmit(Vector3 currentWorldVelocity, float dt)
+    private void StepKinematics(Vector3 currentWorldVelocity, float dt)
     {
         if (dt <= 1e-6f) return;
 
-        isBleReady = bleConnectedInternal;
+        isBleReady = isConnectedAndReady;
 
-        // Seed velocity on the first valid velocity tick to prevent startup impulse spikes
         if (warmupTicks < 2)
         {
-            lastWorldVelocity = currentWorldVelocity;
-            warmupTicks = 2;
+            lastMotionVelocity = currentWorldVelocity;
+            warmupTicks++;
             return;
         }
 
-        // 1. Compute World Acceleration vector (captures both linear and centripetal cornering acceleration)
-        Vector3 worldAcceleration = (currentWorldVelocity - lastWorldVelocity) / dt;
-        lastWorldVelocity = currentWorldVelocity;
+        Vector3 worldAcceleration = (currentWorldVelocity - lastMotionVelocity) / dt;
+        lastMotionVelocity = currentWorldVelocity;
 
-        // 2. Project onto target's local Right axis (+X)
-        rawLateralAccel = Vector3.Dot(worldAcceleration, targetTransform.right);
+        Transform orientation = (headTransform != null) ? headTransform : motionSource;
+        rawLateralAccel = Vector3.Dot(worldAcceleration, orientation.right);
 
-        // 3. Frame-rate-independent exponential low-pass filter
         if (useSmoothing)
         {
             float alpha = 1f - Mathf.Exp(-smoothingSpeed * dt);
@@ -321,20 +350,13 @@ public class GVSController : MonoBehaviour
             smoothedLateralAccel = rawLateralAccel;
         }
 
-        // 4. Rate-limited 100 Hz BLE transmission (dispatched solely from Unity main thread)
-        if (bleConnectedInternal)
+        if (isConnectedAndReady)
         {
-            if (pendingStartPacket)
+            GVSPacket pkt = ProcessMovement(smoothedLateralAccel);
+            lock (packetLock)
             {
-                pendingStartPacket = false;
-                StartStream();
-            }
-
-            if (Time.unscaledTime >= nextBleSendTime)
-            {
-                nextBleSendTime = Time.unscaledTime + (1f / sendRateHz);
-                GVSPacket pkt = ProcessMovement(smoothedLateralAccel);
-                SendVRMovementData(pkt);
+                latestPacket = pkt;
+                hasNewPacketToSend = true;
             }
         }
     }
@@ -376,60 +398,83 @@ public class GVSController : MonoBehaviour
         };
     }
 
-    public bool StartStream()
+    private static string CleanUuid(string uuid)
     {
-        if (!bleConnectedInternal) return false;
-        return SendVRMovementData(new GVSPacket
-        {
-            command = CMD_START,
-            direction = 0,
-            frequency = 0,
-            amplitude = 0
-        });
+        return string.IsNullOrEmpty(uuid) ? "" : uuid.Trim().Trim('{', '}').ToLowerInvariant();
     }
 
-    public bool EndStream()
+    private static string MatchUuid(string target, IEnumerable<string> candidates)
     {
-        if (!bleConnectedInternal) return false;
-        return SendVRMovementData(new GVSPacket
+        string cleanTarget = CleanUuid(target);
+        foreach (string c in candidates)
         {
-            command = CMD_STOP,
-            direction = 0,
-            frequency = 0,
-            amplitude = 0
-        });
+            if (CleanUuid(c) == cleanTarget)
+                return c;
+        }
+        return null;
     }
 
-    public bool SendVRMovementData(GVSPacket data)
+    private void CleanupPipeline()
     {
-        if (!bleConnectedInternal || string.IsNullOrEmpty(deviceId)) return false;
+        if (!isRunning) return;
 
-        try
+        isRunning = false;
+        isConnectedAndReady = false;
+        shutdownEvent.Set();
+
+        if (activeScan != null)
         {
-            data.WriteToBuffer(txBuffer);
-            return BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, txBuffer);
+            activeScan.Cancel();
         }
-        catch (Exception e)
+
+        // 1. Wait for the background sender thread to exit completely
+        if (bleSenderThread != null && bleSenderThread.IsAlive)
         {
-            Debug.LogError("[GVS] BLE Write failed: " + e.Message);
-            return false;
+            bleSenderThread.Join(300);
         }
+
+        // 2. Transmit STOP synchronously on the calling thread
+        if (ble != null && ble.isConnected && !string.IsNullOrEmpty(deviceId))
+        {
+            try
+            {
+                byte[] stopBuf = new byte[10];
+                new GVSPacket { command = CMD_STOP }.WriteToBuffer(stopBuf);
+                BLE.WritePackage(deviceId, serviceUuid, characteristicUuid, stopBuf);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[GVS] Teardown packet write warning: " + ex.Message);
+            }
+        }
+
+        // Give native WinRT COM stack 150ms to dispatch the final packet before terminating
+        Thread.Sleep(150);
+
+        // 3. Stop connect thread if still pending
+        if (bleConnectThread != null && bleConnectThread.IsAlive)
+        {
+            bleConnectThread.Join(200);
+        }
+
+        // 4. Safely teardown native DLL session
+        if (ble != null)
+        {
+            ble.Close();
+            ble = null;
+        }
+
+        shutdownEvent.Dispose();
+        Debug.Log("[GVS] Native BLE pipeline cleanly closed.");
     }
 
     void OnApplicationQuit()
     {
-        if (activeScan != null) activeScan.Cancel();
+        CleanupPipeline();
+    }
 
-        if (bleConnectedInternal)
-        {
-            EndStream();
-            bleConnectedInternal = false;
-            Thread.Sleep(50); // Allow WinRT to flush the 0 uA STOP packet before closing
-        }
-
-        if (ble != null)
-        {
-            ble.Close();
-        }
+    void OnDisable()
+    {
+        CleanupPipeline();
     }
 }
