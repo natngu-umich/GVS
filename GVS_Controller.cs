@@ -13,12 +13,12 @@ public class GVSController : MonoBehaviour
     [Header("BLE Configuration")]
     
     [Tooltip("Advertised BLE name of your ESP32 (e.g., 'ESP32-Brocoli'). Used to auto-find deviceId if deviceId is blank.")]
-    public string targetDeviceName = "ESP32";
+    public string targetDeviceName = "ESP32-Brocoli";
     
     [Tooltip("Windows BLE Device ID (e.g., BluetoothLE#...). Leave blank to auto-scan by targetDeviceName.")]
     public string deviceId = "";
     public string serviceUuid = "19b10000-e8f2-537e-4f6c-d104768a1214";
-    public string characteristicUuid = "19b10001-e8f2-537e-4f6c-d104768a1214";
+    public string characteristicUuid = "19b10002-e8f2-537e-4f6c-d104768a1214";
 
     [Tooltip("Target transmission rate in Hz (100 Hz = 10ms intervals).")]
     [Range(10f, 120f)] public float sendRateHz = 100f;
