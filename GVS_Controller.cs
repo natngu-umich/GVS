@@ -486,7 +486,6 @@ public class GVSController : MonoBehaviour
         if (ble == null) ble = new BLE();
 
         Interlocked.Exchange(ref shutdownStarted, 0);
-        Interlocked.Exchange(ref shutdownStarted, 0);
         isRunning = true;
         isConnectedAndReady = false;
         linkLost = false;
@@ -495,7 +494,6 @@ public class GVSController : MonoBehaviour
         connDeviceId = connServiceUuid = connCharUuid = null;
         outputEnabled = isActiveAndEnabled;
         shutdownEvent.Reset();
-        sendIntervalMs = Mathf.Max(10, Mathf.RoundToInt(1000f / sendRateHz));
 
         bleConnectThread = new Thread(BleConnectionRoutine) { IsBackground = true, Name = "GVS BLE Connect" };
         bleConnectThread.Start();
