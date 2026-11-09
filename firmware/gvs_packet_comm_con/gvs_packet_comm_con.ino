@@ -35,7 +35,7 @@ static_assert(sizeof(GVSPacket) == 10, "GVSPacket must be exactly 10 bytes");
 // Microamps delivered per DAC count through the Howland pump. Measure it (e.g. with the INA219)
 // before enabling. Compilation is blocked until you set it, so a guess can't reach a person.
 #define UA_PER_DAC_COUNT_CALIBRATED 1
-const float UA_PER_DAC_COUNT = 0.000805;     // <-- your measured value (isn't this just 3.3/4096??? idk)
+const float UA_PER_DAC_COUNT =  0.000805;     // <-- your measured value (isn't this just 3.3/4096??? idk)
 #if !UA_PER_DAC_COUNT_CALIBRATED
 #error "Set UA_PER_DAC_COUNT to your measured value, then set UA_PER_DAC_COUNT_CALIBRATED to 1."
 #endif
@@ -71,7 +71,7 @@ Adafruit_INA219 ina219;
 // Shared state (written by one task, read by StatusTask for printing only)
 volatile bool deviceConnected = false;
 volatile bool armed = false;
-volatile int32_t outputCurr = 0;
+volatile int32_t output_uA = 0;
 volatile uint32_t rxCount = 0, rejectCount = 0, watchdogTrips = 0;
 
 
@@ -111,40 +111,50 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
 static int last_dac_out = -1;
 static int lastDir = -1;
 
-static void writeHardware(int32_t newCurr) {
-  int32_t mag = abs(newCurr);
-  int dac_out = constrain((int)lroundf(mag / UA_PER_DAC_COUNT), 0, (int)DAC_MAX);
-  int dir = newCurr > 0 ? 1 : 0;
+static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
+  int dir = unity_dir > 0 ? 1 : -1;
+  int32_t sign_val = unity_amp * dir;
+  uint16_t dac_out = map(sign_val, -3000, 3000, 0, 4096);
 
-  // Never switch polarity while current is flowing: DAC to zero first, then the pin.
-  if (dac_out > 0 && dir != lastDir) {
-    if (last_dac_out != 0) { 
-      dac.setVoltage(0, false); last_dac_out = 0; 
-    }
-    lastDir = dir;
-  }
+  Serial.print("unity val: ");
+  Serial.print(unity_amp);
+  Serial.print(" signed: ");
+  Serial.print(sign_val);
+  Serial.print(" dac_out: ");
+  Serial.println(dac_out);
+  // Serial.print(" dir: ");
+  // Serial.println(dir);
+
+  // // Never switch polarity while current is flowing: DAC to zero first, then the pin.
+  // if (dac_out > 0 && dir != lastDir) {
+  //   if (last_dac_out != 0) { 
+  //     dac.setVoltage(0, false); last_dac_out = 0; 
+  //   }
+  //   lastDir = dir;
+  // }
 
   if (dac_out != last_dac_out) {                // skip redundant I2C writes
     dac.setVoltage(dac_out, false);
     last_dac_out = dac_out;
+    lastDir = dir;
   }
 }
 
-static void applyOutput(int32_t target) {
-  int32_t cur = outputCurr;
-  int32_t next;
+// static void applyOutput(int32_t target) {
+//   int32_t cur = output_uA;
+//   int32_t next;
 
-  if ((cur > 0 && target < 0) || (cur < 0 && target > 0)) {
-    next = 0;                                // polarity change: pass through zero first
-  } else {
-    next = target;
-    // int32_t step = RAMP_UP_UA_PER_MS * elapsed;
-    // next = cur + constrain(target - cur, -step, step);
-  }
+//   if ((cur > 0 && target < 0) || (cur < 0 && target > 0)) {
+//     next = 0;                                // polarity change: pass through zero first
+//   } else {
+//     next = target;
+//     // int32_t step = RAMP_UP_UA_PER_MS * elapsed;
+//     // next = cur + constrain(target - cur, -step, step);
+//   }
 
-  writeHardware(next);
-  outputCurr = next;
-}
+//   writeHardware(next);
+//   outputCurr = next;
+// }
 
 
 // Reads a line from the Serial Monitor and sets the DAC to that value (0-4095)
@@ -165,45 +175,60 @@ void DACTask(void *pvParameters) {
           break;
         case CMD_DATA: 
           int32_t amp = p.amplitude;                       // copy out of the packed struct
-          int32_t a = amp < HARD_MAX_UA ? amp : HARD_MAX_UA;
-          target = armed ? (p.direction ? a : -a) : 0;   // DATA before START is ignored
+          target = amp < HARD_MAX_UA ? amp : HARD_MAX_UA;
+          //target = armed ? (p.direction ? a : -a) : 0;   // DATA before START is ignored
           break;
       }
     }
     else {
       // Watchdog: heartbeat lost. Zero now; stay armed so output resumes (ramped) when packets return.
-      if (outputCurr != 0) {
+      if (output_uA != 0) {
         watchdogTrips++;
         target = 0;
       }
     }
-    applyOutput(target);
+    //applyOutput(target);
+    writeHardware(target, p.direction);
   }
 }
 
 
 void StatusTask(void *parameter) {
-    bool wasConnected = false;
-    uint32_t lastRx = 0;
-    vTaskDelay(pdMS_TO_TICKS(1000));
+  bool wasConnected = false;
+  uint32_t lastRx = 0;
+  vTaskDelay(pdMS_TO_TICKS(1000));
 
-    bool connected = deviceConnected;
-    if (connected != wasConnected) {
-      Serial.println(connected ? "Device connected" : "Device disconnected, advertising");
-      wasConnected = connected;
-    }
+  bool connected = deviceConnected;
+  if (connected != wasConnected) {
+    Serial.println(connected ? "Device connected" : "Device disconnected, advertising");
+    wasConnected = connected;
+  }
+  
+  for(;;){
+
     //if (!connected) continue;
 
     //TODO: turn this into a packet
+    // GVSPacket p;
+    // p.command = {CMD_DATA, 0, 0, (int32_t)readCurrent_uA()}
+    // struct __attribute__((packed)) GVSPacket {
+    //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
+    //   uint8_t direction;   // 0 / 1 polarity
+    //   int32_t frequency;   // currently unused (DC)
+    //   int32_t amplitude;   // microamps
+    // };
+
+
     float curr = (float)readCurrent_uA();
     pSensorCharacteristic->setValue(curr);
     pSensorCharacteristic->notify();
 
     uint32_t rx = rxCount;
-    Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA | measured %.0f uA\n",
-                  (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
-                  (int)armed, (long)outputCurr, curr);
+    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA | measured %.0f uA\n",
+    //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
+    //               (int)armed, (long)output_uA, curr);
     lastRx = rx;
+  }
 }
 
 
@@ -258,7 +283,7 @@ void setup() {
   // Start advertising
   BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(false);
+  pAdvertising->setScanResponse(true);
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
