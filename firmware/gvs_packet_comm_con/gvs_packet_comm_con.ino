@@ -109,7 +109,7 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
 };
 
 static int last_dac_out = -1;
-static int lastDir = -1;
+static int lastDir = 0;
 
 static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
   int dir = unity_dir > 0 ? 1 : -1;
@@ -121,9 +121,9 @@ static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
   Serial.print(" signed: ");
   Serial.print(sign_val);
   Serial.print(" dac_out: ");
-  Serial.println(dac_out);
-  // Serial.print(" dir: ");
-  // Serial.println(dir);
+  Serial.print(dac_out);
+  Serial.print(" dir: ");
+  Serial.println(unity_dir);
 
   // // Never switch polarity while current is flowing: DAC to zero first, then the pin.
   // if (dac_out > 0 && dir != lastDir) {
@@ -209,8 +209,9 @@ void StatusTask(void *parameter) {
     //if (!connected) continue;
 
     //TODO: turn this into a packet
-    // GVSPacket p;
-    // p.command = {CMD_DATA, 0, 0, (int32_t)readCurrent_uA()}
+    float curr = (float)readCurrent_uA();
+    GVSPacket p;
+    p = {CMD_DATA, lastDir, 0, (int32_t)curr}; //maybe have issue w/ lastDir since it's updated in another task but idk
     // struct __attribute__((packed)) GVSPacket {
     //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
     //   uint8_t direction;   // 0 / 1 polarity
@@ -219,14 +220,14 @@ void StatusTask(void *parameter) {
     // };
 
 
-    float curr = (float)readCurrent_uA();
-    pSensorCharacteristic->setValue(curr);
+   // float curr = (float)readCurrent_uA();
+    pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
     pSensorCharacteristic->notify();
 
     uint32_t rx = rxCount;
-    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA | measured %.0f uA\n",
+    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n",
     //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
-    //               (int)armed, (long)output_uA, curr);
+    //               (int)armed, (long)output_uA, (int)lastDir);
     lastRx = rx;
   }
 }
