@@ -7,24 +7,37 @@
   Serial Monitor baud rate: 115200
 */
 
+#include <Adafruit_MCP4725.h>
+
 // ---------- Pin definitions ----------
 const int LED_PINS[4]    = {13, 16, 14, 15};
 const int BUTTON_PINS[1] = {23};
 const int SWITCH_PINS[2] = {26, 27};
 const int POT_PIN        = 33;   // ADC1 pin, input-only (safe to use with WiFi)
 
+const int SDA_2 = 18;
+const int SCL_2 = 19;
+
 // ---------- Timing (milliseconds) ----------
-const unsigned long LED_INTERVAL_MS   = 500;   // how often the active LED advances
+const unsigned long LED_INTERVAL_MS   = 2000;   // how often the active LED advances
 const unsigned long PRINT_INTERVAL_MS = 1000;  // how often status is printed
 
 // ---------- ADC settings ----------
 const int   ADC_MAX     = 4095;  // 12-bit resolution
 const float ADC_REF_VOLT = 3.3;  // approximate; ESP32 ADC is not perfectly linear
 
+// ---------- DAC settings ----------
+// MCP4725 is 12-bit
+const long DAC_MAX = 4095;
+const float DAC_VREF = 3.3;  // DAC supply voltage (used only for the printed estimate)
+
 // ---------- State ----------
 int currentLed = 0;
 unsigned long lastLedChange = 0;
 unsigned long lastPrint = 0;
+
+// ---------- DAC object ----------
+Adafruit_MCP4725 dac;
 
 // Set only one LED high, all others low
 void setActiveLed(int index) {
@@ -36,6 +49,11 @@ void setActiveLed(int index) {
 void setup() {
   Serial.begin(115200);
   delay(500);
+
+  // MCP4725 External DAC Setup
+  Wire1.begin(SDA_2, SCL_2);
+  dac.begin(0x60, &Wire1);
+  dac.setVoltage(0, false);  // Start at 0V
 
   for (int i = 0; i < 4; i++) {
     pinMode(LED_PINS[i], OUTPUT);
@@ -63,6 +81,8 @@ void loop() {
     lastLedChange = now;
     currentLed = (currentLed + 1) % 4;
     setActiveLed(currentLed);
+
+    dac.setVoltage(currentLed * 1023, false);
   }
 
   // Print status once per second
