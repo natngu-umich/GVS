@@ -43,7 +43,9 @@ const float UA_PER_DAC_COUNT =  0.000805;     // <-- your measured value (isn't 
 
 const int32_t HARD_MAX_UA = 3000;        // independent of whatever Unity sends
 const uint32_t WATCHDOG_MS = 200;        // no packet for this long -> output zero (Unity sends at 30-100 Hz)
-//const int32_t RAMP_UP_UA_PER_MS = 30;    // increases limited to 3 mA per 100 ms; decreases are instant
+
+
+const int32_t RAMP_VAL = 25; //max change of 25uA in 2.5 ms (aka 100uA in 10ms, matching Unity limits)
 
 //const int ledPin = 2; // Use the appropriate GPIO pin for your setup
 
@@ -116,62 +118,58 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
   }
 };
 
-static int last_dac_out = -1;
+static int last_dac_out = -1; // 0 - 4095
 static int lastDir = 0;
 static float last_pot = 1; // default unscaled
 
+static int32_t prev_unity_amp = 0; //previous value actually sent from unity (scaled)
+static int32_t prev_actual_amp = 0; //previous/latest value (-3000 to 3000) used for DAC (aka ramp up/down) (scaled)
+static int32_t unity_amp = 0; //scaled target (newest value actually sent from unity)
+static uint8_t unity_dir = 0;
 
-static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
-  int dir = unity_dir > 0 ? 1 : -1;
-  int32_t sign_val = unity_amp * dir;
-  uint16_t dac_out = map(sign_val, -3000, 3000, 0, 4096);
-  uint16_t scaled_dac_out = (dac_out * last_pot) + 0.5f;
 
-  Serial.print("unity val: ");
-  Serial.print(unity_amp);
-  Serial.print(" signed: ");
-  Serial.print(sign_val);
-  Serial.print(" dac_out: ");
-  Serial.print(dac_out);
-  Serial.print(" scaled_dac_out: ");
-  Serial.print(scaled_dac_out);
-  Serial.print(" dir: ");
-  Serial.println(unity_dir);
+void writeHardwareTask(void *parameter) {
+  for (;;) {
+    int dir = unity_dir > 0 ? 1 : -1;
+    int32_t scaled_sign_val = (unity_amp + 0.5f) * dir; // -3000 to 3000 
 
-  // // Never switch polarity while current is flowing: DAC to zero first, then the pin.
-  // if (dac_out > 0 && dir != lastDir) {
-  //   if (last_dac_out != 0) { 
-  //     dac.setVoltage(0, false); last_dac_out = 0; 
-  //   }
-  //   lastDir = dir;
-  // }
+    if (abs(scaled_sign_val - prev_actual_amp) > RAMP_VAL) {
+      if (scaled_sign_val < prev_actual_amp) {
+        scaled_sign_val = prev_actual_amp - RAMP_VAL;
+      }
 
-  if (scaled_dac_out != last_dac_out) {                // skip redundant I2C writes
-    dac.setVoltage(scaled_dac_out, false);
-    last_dac_out = scaled_dac_out;
-    lastDir = dir;
+      else {
+        scaled_sign_val = prev_actual_amp + RAMP_VAL;
+      }
+
+    }
+
+    prev_actual_amp = scaled_sign_val;
+
+    uint16_t dac_out = map(scaled_sign_val, -3000, 3000, 0, 4095);
+
+    Serial.print("scaled unity val: ");
+    Serial.print(unity_amp);
+    Serial.print(" scaled signed val: ");
+    Serial.print(scaled_sign_val );
+    Serial.print(" dac_out: ");
+    Serial.print(dac_out);
+    Serial.print(" dir: ");
+    Serial.println(unity_dir);
+
+    if (dac_out != last_dac_out) {                // skip redundant I2C writes
+      dac.setVoltage(dac_out, false);
+      last_dac_out = dac_out;
+      lastDir = dir;
+    }
+      
+    vTaskDelay(pdMS_TO_TICKS(2.5));
+
   }
 }
 
-// static void applyOutput(int32_t target) {
-//   int32_t cur = output_uA;
-//   int32_t next;
-
-//   if ((cur > 0 && target < 0) || (cur < 0 && target > 0)) {
-//     next = 0;                                // polarity change: pass through zero first
-//   } else {
-//     next = target;
-//     // int32_t step = RAMP_UP_UA_PER_MS * elapsed;
-//     // next = cur + constrain(target - cur, -step, step);
-//   }
-
-//   writeHardware(next);
-//   outputCurr = next;
-// }
-
-
 // Reads a line from the Serial Monitor and sets the DAC to that value (0-4095)
-void DACTask(void *pvParameters) {
+void UnityReadTask (void *parameter) {
   GVSPacket p;
   int32_t target = 0;
 
@@ -201,7 +199,13 @@ void DACTask(void *pvParameters) {
       }
     }
     //applyOutput(target);
-    writeHardware(target, p.direction);
+    //writeHardware(target, p.direction);
+    prev_unity_amp = unity_amp;
+    unity_amp = target * last_pot; //scaled!
+    unity_dir = p.direction;
+
+    vTaskDelay(pdMS_TO_TICKS(5)); //5 ms
+
   }
 }
 
@@ -214,14 +218,18 @@ void PotTask (void *parameter) {
     }
 
     last_pot = pot_percent;
+
+    vTaskDelay(pdMS_TO_TICKS(10)); //10 ms
+
   }
+
 }
 
 
 void StatusTask(void *parameter) {
   bool wasConnected = false;
   uint32_t lastRx = 0;
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  //vTaskDelay(pdMS_TO_TICKS(1000));
 
   bool connected = deviceConnected;
   if (connected != wasConnected) {
@@ -234,6 +242,8 @@ void StatusTask(void *parameter) {
     //if (!connected) continue;
 
     float curr = (float)readCurrent_uA();
+    output_uA = curr;
+
     float scaled_pot = last_pot * 100;
     GVSPacket p;
     p = {CMD_DATA, lastDir, (int32_t) scaled_pot , (int32_t) curr}; //maybe have issue w/ lastDir since it's updated in another task but idk
@@ -250,7 +260,7 @@ void StatusTask(void *parameter) {
     pSensorCharacteristic->notify();
 
     uint32_t rx = rxCount;
-    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n   |   pot strength %f %"),
+    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n  |   pot strength %f %"),
     //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
     //               (int)armed, (long)output_uA, (int)lastDir, last_pot);
     lastRx = rx;
@@ -319,10 +329,19 @@ void setup() {
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
 
+  xTaskCreatePinnedToCore(
+    writeHardwareTask,         // Task function
+    "writeHardwareTask",       // Task name
+    10000,             // Stack size (bytes)
+    NULL,              // Parameters
+    4,                 // Priority
+    NULL,  // Task handle
+    1                  // Core 1 //double check this
+  );
 
   xTaskCreatePinnedToCore(
-    DACTask,         // Task function
-    "DACTask",       // Task name
+    UnityReadTask,         // Task function
+    "UnityReadTask",       // Task name
     10000,             // Stack size (bytes)
     NULL,              // Parameters
     3,                 // Priority
