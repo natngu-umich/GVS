@@ -51,9 +51,17 @@ const uint32_t WATCHDOG_MS = 200;        // no packet for this long -> output ze
 const int SDA_2 = 18;
 const int SCL_2 = 19;
 
+//ADC/Potentiometer Pin
+const int POT_PIN = 33;
+
 // MCP4725 is 12-bit
 const long DAC_MAX = 4095;
 const float DAC_VREF = 3.3;  // DAC supply voltage (used only for the printed estimate)
+
+const int   ADC_MAX     = 4095;  // 12-bit resolution
+const float ADC_REF_VOLT = 3.3;  // approximate; ESP32 ADC is not perfectly linear
+
+
 
 // // Declare task handles
 // //TaskHandle_t BlinkTaskHandle = NULL;
@@ -110,11 +118,14 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
 
 static int last_dac_out = -1;
 static int lastDir = 0;
+static float last_pot = 1; // default unscaled
+
 
 static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
   int dir = unity_dir > 0 ? 1 : -1;
   int32_t sign_val = unity_amp * dir;
   uint16_t dac_out = map(sign_val, -3000, 3000, 0, 4096);
+  uint16_t scaled_dac_out = (dac_out * last_pot) + 0.5f;
 
   Serial.print("unity val: ");
   Serial.print(unity_amp);
@@ -122,6 +133,8 @@ static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
   Serial.print(sign_val);
   Serial.print(" dac_out: ");
   Serial.print(dac_out);
+  Serial.print(" scaled_dac_out: ");
+  Serial.print(scaled_dac_out);
   Serial.print(" dir: ");
   Serial.println(unity_dir);
 
@@ -133,9 +146,9 @@ static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
   //   lastDir = dir;
   // }
 
-  if (dac_out != last_dac_out) {                // skip redundant I2C writes
-    dac.setVoltage(dac_out, false);
-    last_dac_out = dac_out;
+  if (scaled_dac_out != last_dac_out) {                // skip redundant I2C writes
+    dac.setVoltage(scaled_dac_out, false);
+    last_dac_out = scaled_dac_out;
     lastDir = dir;
   }
 }
@@ -192,6 +205,18 @@ void DACTask(void *pvParameters) {
   }
 }
 
+void PotTask (void *parameter) {
+  for (;;) {
+    int pot_raw = analogRead(POT_PIN);
+    float pot_percent = (pot_raw * 100.0) / ADC_MAX;
+    if (pot_percent < 0.1) {
+      pot_percent = 0.1;
+    }
+
+    last_pot = pot_percent;
+  }
+}
+
 
 void StatusTask(void *parameter) {
   bool wasConnected = false;
@@ -208,10 +233,10 @@ void StatusTask(void *parameter) {
 
     //if (!connected) continue;
 
-    //TODO: turn this into a packet
     float curr = (float)readCurrent_uA();
+    float scaled_pot = last_pot * 100;
     GVSPacket p;
-    p = {CMD_DATA, lastDir, 0, (int32_t)curr}; //maybe have issue w/ lastDir since it's updated in another task but idk
+    p = {CMD_DATA, lastDir, (int32_t) scaled_pot , (int32_t) curr}; //maybe have issue w/ lastDir since it's updated in another task but idk
     // struct __attribute__((packed)) GVSPacket {
     //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
     //   uint8_t direction;   // 0 / 1 polarity
@@ -225,9 +250,9 @@ void StatusTask(void *parameter) {
     pSensorCharacteristic->notify();
 
     uint32_t rx = rxCount;
-    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n",
+    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n   |   pot strength %f %"),
     //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
-    //               (int)armed, (long)output_uA, (int)lastDir);
+    //               (int)armed, (long)output_uA, (int)lastDir, last_pot);
     lastRx = rx;
   }
 }
@@ -241,11 +266,16 @@ void setup() {
   //INA219 Current Sensor Setup
   ina219Init();
 
+  //ADC and Potentiometer Setup
+  analogReadResolution(12);  // 0-4095
+  pinMode(POT_PIN, INPUT);
+
   // MCP4725 External DAC Setup
   Wire1.begin(SDA_2, SCL_2);
   dac.begin(0x60, &Wire1);
   dac.setVoltage(0, false);  // Start at 0V
   last_dac_out = 0;
+  last_pot = 1;
 
   cmdQueue = xQueueCreate(1, sizeof(GVSPacket));
 
@@ -296,6 +326,16 @@ void setup() {
     10000,             // Stack size (bytes)
     NULL,              // Parameters
     3,                 // Priority
+    NULL,  // Task handle
+    1                  // Core 1 //double check this
+  );
+
+  xTaskCreatePinnedToCore(
+    PotTask,         // Task function
+    "PotTask",       // Task name
+    10000,             // Stack size (bytes)
+    NULL,              // Parameters
+    2,                 // Priority
     NULL,  // Task handle
     1                  // Core 1 //double check this
   );
