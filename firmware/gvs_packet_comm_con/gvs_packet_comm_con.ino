@@ -36,7 +36,7 @@ static_assert(sizeof(GVSPacket) == 10, "GVSPacket must be exactly 10 bytes");
 // before enabling. Compilation is blocked until you set it, so a guess can't reach a person.
 #define UA_PER_DAC_COUNT_CALIBRATED 1
 const float UA_PER_DAC_COUNT =  0.000805;     // <-- your measured value (isn't this just 3.3/4096??? idk)
-const int32_t DAC_ZERO = 2048;                      // DAC code that gives 0 uA (mid-scale). Trim after measuring.
+const int32_t DAC_ZERO = 2047;                      // DAC code that gives 0 uA (mid-scale). Trim after measuring.
 #if !UA_PER_DAC_COUNT_CALIBRATED
 #error "Set UA_PER_DAC_COUNT to your measured value, then set UA_PER_DAC_COUNT_CALIBRATED to 1."
 #endif
@@ -123,14 +123,14 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
   }
 };
 
-static int last_dac_out = -1; // 0 - 4095
-static int lastDir = 0;
-static float last_pot = 1; // default unscaled
+static volatile int last_dac_out = -1; // 0 - 4095
+static volatile int lastDir = 0;
+static volatile float last_pot = 1; // default unscaled
 
-static int32_t prev_unity_amp = 0; //previous value actually sent from unity (scaled)
-static int32_t prev_actual_amp = 0; //previous/latest value (-3000 to 3000) used for DAC (aka ramp up/down) (scaled)
-static int32_t unity_amp = 0; //scaled target (newest value actually sent from unity)
-static uint8_t unity_dir = 0;
+static volatile int32_t prev_unity_amp = 0; //previous value actually sent from unity (scaled)
+static volatile int32_t prev_actual_amp = 0; //previous/latest value (-3000 to 3000) used for DAC (aka ramp up/down) (scaled)
+static volatile int32_t unity_amp = 0; //scaled target (newest value actually sent from unity)
+static volatile uint8_t unity_dir = 0;
 
 
 void writeHardwareTask(void *parameter) {
@@ -253,6 +253,14 @@ void StatusTask(void *parameter) {
       }; //maybe have issue w/ lastDir since it's updated in another task but idk
       pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
       pSensorCharacteristic->notify();
+      
+      Serial.print("unity val: "); // scaled
+      Serial.print(unity_amp);
+      Serial.print(" signed val: "); // scaled
+      Serial.print(prev_actual_amp);
+      Serial.print(" dac_out: "); Serial.print(last_dac_out);
+      Serial.print(" pot: ");  Serial.print(last_pot);
+      Serial.print(" dir: "); Serial.println(unity_dir);
     }
 
     uint32_t rx = rxCount;
@@ -260,15 +268,6 @@ void StatusTask(void *parameter) {
     //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
     //               (int)armed, (long)output_uA, (int)lastDir, last_pot);
     lastRx = rx;
-
-    Serial.print("scaled unity val: ");
-    Serial.print(unity_amp);
-    Serial.print(" scaled signed val: ");
-    Serial.print(prev_actual_amp);
-    Serial.print(" dac_out: ");
-    Serial.print(last_dac_out);
-    Serial.print(" dir: ");
-    Serial.println(unity_dir);
 
     vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(STATUS_TASK_PERIOD_MS));   // one pass every 12 ms
   }
