@@ -86,6 +86,8 @@ public class GVSController : MonoBehaviour
     [Range(0, HardMaxAmplitudeMicroAmps)] public int maxAmplitudeMicroAmps = 3000;
     [Tooltip("Maximum rate of change of the commanded current (uA per second). Polarity reversals ramp through zero.")]
     public float slewRateMicroAmpsPerSec = 10000f;
+    [Tooltip("Largest change allowed between two consecutive packets (uA), whatever the send rate. 0 = no per-packet limit (only the per-second ramp applies).")]
+    public float maxStepPerPacketMicroAmps = 100f;
     [FormerlySerializedAs("defaultFrequencyMHz")]
     [Tooltip("Written verbatim to the packet's frequency field. The unit is whatever the ESP32 firmware defines (0 = DC).")]
     public int stimulationFrequency = 0;
@@ -234,6 +236,7 @@ public class GVSController : MonoBehaviour
         teleportSpeedThreshold = Mathf.Max(1f, teleportSpeedThreshold);
         maxYawRateDegPerSec = Mathf.Max(1f, maxYawRateDegPerSec);
         slewRateMicroAmpsPerSec = Mathf.Clamp(slewRateMicroAmpsPerSec, 500f, 100000f);
+        maxStepPerPacketMicroAmps = Mathf.Clamp(maxStepPerPacketMicroAmps, 0f, HardMaxAmplitudeMicroAmps);
     }
 
     void Start()
@@ -811,7 +814,9 @@ public class GVSController : MonoBehaviour
             target = Mathf.Clamp(target, -cap, cap);
 
             // ---- Slew limit on the SIGNED value: polarity changes pass through zero ----
-            float maxStep = Mathf.Min(Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt, 100f); // never more than 100 µA per packet
+            float maxStep = Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt;
+            float perPacketCap = maxStepPerPacketMicroAmps;
+            if (perPacketCap > 0f) maxStep = Mathf.Min(maxStep, perPacketCap);
             slewed = Mathf.MoveTowards(slewed, target, maxStep);
 
             int amp = Mathf.Clamp(Mathf.RoundToInt(Mathf.Abs(slewed)), 0, HardMaxAmplitudeMicroAmps);

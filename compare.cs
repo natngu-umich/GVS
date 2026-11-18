@@ -86,15 +86,19 @@ public class GVSController : MonoBehaviour
     [Range(0, HardMaxAmplitudeMicroAmps)] public int maxAmplitudeMicroAmps = 3000;
     [Tooltip("Maximum rate of change of the commanded current (uA per second). Polarity reversals ramp through zero.")]
     public float slewRateMicroAmpsPerSec = 10000f;
+    [Tooltip("Largest change allowed between two consecutive packets (uA), whatever the send rate. 0 = no per-packet limit (only the per-second ramp applies).")]
+    public float maxStepPerPacketMicroAmps = 100f;
     [FormerlySerializedAs("defaultFrequencyMHz")]
     [Tooltip("Written verbatim to the packet's frequency field. The unit is whatever the ESP32 firmware defines (0 = DC).")]
     public int stimulationFrequency = 0;
 
-    [Header("Incoming Notifications (from the ESP32 subscription)")]
-    [Tooltip("Print notifications received on the notify characteristic to the Unity console.")]
-    public bool logNotifications = true;
-    [Tooltip("Only print when the payload differs from the previous one.")]
-    public bool logOnlyOnChange = true;
+    [Header("Manual Test Input")]
+    [Tooltip("Ignore object motion and drive the signal from Manual Input instead (joystick script or this slider).")]
+    public bool manualMode = false;
+    [Tooltip("-1 = full left, +1 = full right. Multiplied by Max Expected Accel, then sent through the same deadzone, smoothing, ramp limit and cap as real motion.")]
+    [Range(-1f, 1f)] public float manualInput = 0f;
+    [Tooltip("Off: the input is the ear-to-ear acceleration directly. On: the input is a sideways acceleration of the rig, so turning the head changes the signal.")]
+    public bool manualRelativeToRig = false;
 
     [Header("Debug Telemetry (Read-Only)")]
     public float rawLateralAccel;
@@ -109,12 +113,23 @@ public class GVSController : MonoBehaviour
     public int consecutiveWriteFailures;
     public int rejectedSpikes;
     public int notificationsReceived;
-    public string lastNotificationText;
+
+    [Header("Received From ESP32 (Read-Only)")]
+    [Tooltip("Latest GVS packet the ESP32 sent on the notify characteristic.")]
+    public GVSPacket lastReceivedPacket;
+    public bool hasReceivedPacket = false;
+    [Tooltip("Print every received packet to the Console.")]
+    public bool logReceivedPackets = true;
+
+    /// <summary>Same packet, readable from any script as GVSController.LatestReceivedPacket.</summary>
+    public static GVSPacket LatestReceivedPacket { get; private set; }
+    public static bool HasReceivedPacket { get; private set; }
 
     public const byte CMD_STOP = 0;
     public const byte CMD_START = 1;
     public const byte CMD_DATA = 2;
 
+    [Serializable]
     public struct GVSPacket
     {
         public const int Size = 10;
@@ -143,6 +158,23 @@ public class GVSController : MonoBehaviour
             buf[7] = (byte)((amplitude >> 8) & 0xFF);
             buf[8] = (byte)((amplitude >> 16) & 0xFF);
             buf[9] = (byte)((amplitude >> 24) & 0xFF);
+        }
+
+        // Reverse of WriteToBuffer: reads the first 10 bytes of buf.
+        public static GVSPacket FromBuffer(byte[] buf)
+        {
+            return new GVSPacket
+            {
+                command = buf[0],
+                direction = buf[1],
+                frequency = buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24),
+                amplitude = buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)
+            };
+        }
+
+        public override string ToString()
+        {
+            return "cmd=" + command + " dir=" + direction + " freq=" + frequency + " amp=" + amplitude + " uA";
         }
     }
 
@@ -175,6 +207,11 @@ public class GVSController : MonoBehaviour
     private int sharedTargetSignedUa = 0;
     private long sharedTargetTimestamp = 0; // Stopwatch ticks; 0 = never published
 
+    // Notifications go from the sender thread to Update() through this queue.
+    private readonly object rxLock = new object();
+    private readonly Queue<byte[]> rxQueue = new Queue<byte[]>();
+    private Action<byte[], int> rxCallback;
+
     // ---------------- Kinematics state (main thread only) ----------------
     private Rigidbody motionRb;
     private SamplingMode activeMode;
@@ -184,6 +221,7 @@ public class GVSController : MonoBehaviour
     private bool hasLastPosition;
     private bool hasLastVelocity;
     private bool hasLastRotation;
+    private bool wasManual;
 
     // =====================================================================
     // Unity lifecycle
@@ -198,11 +236,14 @@ public class GVSController : MonoBehaviour
         teleportSpeedThreshold = Mathf.Max(1f, teleportSpeedThreshold);
         maxYawRateDegPerSec = Mathf.Max(1f, maxYawRateDegPerSec);
         slewRateMicroAmpsPerSec = Mathf.Clamp(slewRateMicroAmpsPerSec, 500f, 100000f);
+        maxStepPerPacketMicroAmps = Mathf.Clamp(maxStepPerPacketMicroAmps, 0f, HardMaxAmplitudeMicroAmps);
     }
 
     void Start()
     {
         OnValidate(); // also enforce limits on values set from code / old scenes
+        hasReceivedPacket = false;
+        HasReceivedPacket = false;
 
         if (motionSource == null) motionSource = this.transform;
         if (headTransform == null)
@@ -241,11 +282,30 @@ public class GVSController : MonoBehaviour
     {
         isBleReady = isConnectedAndReady && !linkLost;
         CheckForHungWrite();
+        ProcessReceivedPackets();
+
+        if (manualMode) StepManual();
+        else if (wasManual) { wasManual = false; ResetKinematicsState(); }
+    }
+
+    // Manual test input: skips the motion tracking, keeps everything after it.
+    private void StepManual()
+    {
+        float dt = Time.deltaTime;
+        if (dt <= 1e-6f) return; // paused: the sender ramps to zero when the target goes stale
+        wasManual = true;
+
+        float accel = Mathf.Clamp(manualInput, -1f, 1f) * maxExpectedAccel;
+        if (manualRelativeToRig && motionSource != null && headTransform != null)
+            accel *= Vector3.Dot(motionSource.right, headTransform.right);
+
+        rawLateralAccel = accel;
+        UpdateOutput(accel, dt);
     }
 
     void FixedUpdate()
     {
-        if (motionSource == null) return;
+        if (motionSource == null || manualMode) return;
         RefreshSamplingMode();
 
         float dt = Time.fixedDeltaTime;
@@ -270,7 +330,7 @@ public class GVSController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (motionSource == null || activeMode != SamplingMode.LateUpdatePosition) return;
+        if (motionSource == null || manualMode || activeMode != SamplingMode.LateUpdatePosition) return;
 
         float dt = Time.deltaTime;
         if (dt <= 1e-6f) return; // paused: stop publishing, the sender ramps to zero when stale
@@ -491,6 +551,7 @@ public class GVSController : MonoBehaviour
         }
 
         if (ble == null) ble = new BLE();
+        if (rxCallback == null) rxCallback = QueueReceived;
 
         Interlocked.Exchange(ref shutdownStarted, 0);
         isRunning = true;
@@ -754,6 +815,8 @@ public class GVSController : MonoBehaviour
 
             // ---- Slew limit on the SIGNED value: polarity changes pass through zero ----
             float maxStep = Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt;
+            float perPacketCap = maxStepPerPacketMicroAmps;
+            if (perPacketCap > 0f) maxStep = Mathf.Min(maxStep, perPacketCap);
             slewed = Mathf.MoveTowards(slewed, target, maxStep);
 
             int amp = Mathf.Clamp(Mathf.RoundToInt(Mathf.Abs(slewed)), 0, HardMaxAmplitudeMicroAmps);
@@ -800,7 +863,7 @@ public class GVSController : MonoBehaviour
             // ---- Drain incoming notifications (~10 Hz) so the DLL's queue can't grow forever ----
             if (++ticks % 10 == 0)
             {
-                try { notificationsReceived += BLE.DrainNotifications(16, OnNotification); } catch { }
+                try { notificationsReceived += BLE.DrainNotifications(16, rxCallback); } catch { }
             }
 
             // ---- Measured rate ----
@@ -812,21 +875,6 @@ public class GVSController : MonoBehaviour
                 rateWindowStart = now;
             }
         }
-    }
-
-    // Runs on the sender thread for each notification popped from the DLL queue.
-    private long lastNotificationLogTicks;
-    private void OnNotification(byte[] buf, int len)
-    {
-        string message = System.Text.Encoding.ASCII.GetString(buf, 0, len).Trim();
-
-        bool isNew = message != lastNotificationText;
-        if (!logNotifications) return;
-        if (logOnlyOnChange && !isNew) return;
-        
-        lastNotificationText = message;
-
-        Debug.Log("[GVS] ESP32 says: " + message);
     }
 
     private bool TrackedWrite(BLE.PacketWriter writer, byte[] buf, int myGen)
@@ -857,6 +905,53 @@ public class GVSController : MonoBehaviour
             slewed = 0f; // the ESP32 watchdog will have zeroed the output; restart the ramp from zero
             if (isRunning)
                 Debug.LogError("[GVS] BLE link LOST after " + consecutiveWriteFailures + " failed writes. Retrying at 2 Hz. DLL: " + BLE.GetError());
+        }
+    }
+
+    // =====================================================================
+    // Receiving: packets the ESP32 sends on the notify characteristic
+    // =====================================================================
+
+    // Sender thread: copy the bytes and hand them to the main thread.
+    private void QueueReceived(byte[] buf, int len)
+    {
+        if (buf == null || len <= 0) return;
+        byte[] copy = new byte[len];
+        Buffer.BlockCopy(buf, 0, copy, 0, len);
+        lock (rxLock)
+        {
+            if (rxQueue.Count >= 64) rxQueue.Dequeue(); // keep the newest
+            rxQueue.Enqueue(copy);
+        }
+    }
+
+    // Main thread (called from Update): parse, store, log.
+    private void ProcessReceivedPackets()
+    {
+        while (true)
+        {
+            byte[] data;
+            lock (rxLock)
+            {
+                if (rxQueue.Count == 0) return;
+                data = rxQueue.Dequeue();
+            }
+
+            if (data.Length != GVSPacket.Size)
+            {
+                if (logReceivedPackets)
+                    Debug.LogWarning("[GVS] Received " + data.Length + " bytes, not a 10-byte GVS packet: [" +
+                                     BitConverter.ToString(data, 0, Mathf.Min(data.Length, 32)) + "]");
+                continue;
+            }
+
+            lastReceivedPacket = GVSPacket.FromBuffer(data);
+            hasReceivedPacket = true;
+            LatestReceivedPacket = lastReceivedPacket;
+            HasReceivedPacket = true;
+
+            if (logReceivedPackets)
+                Debug.Log("[GVS] Received packet: " + lastReceivedPacket);
         }
     }
 
