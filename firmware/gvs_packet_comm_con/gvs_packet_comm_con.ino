@@ -19,7 +19,7 @@ BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
 BLECharacteristic* pDACCharacteristic = NULL;
 
-QueueHandle_t cmdQueue = NULL; 
+QueueHandle_t cmdQueue = NULL;
 
 enum : uint8_t { CMD_STOP = 0, CMD_START = 1, CMD_DATA = 2 };
 
@@ -36,6 +36,7 @@ static_assert(sizeof(GVSPacket) == 10, "GVSPacket must be exactly 10 bytes");
 // before enabling. Compilation is blocked until you set it, so a guess can't reach a person.
 #define UA_PER_DAC_COUNT_CALIBRATED 1
 const float UA_PER_DAC_COUNT =  0.000805;     // <-- your measured value (isn't this just 3.3/4096??? idk)
+const int32_t DAC_ZERO = 2048;                      // DAC code that gives 0 uA (mid-scale). Trim after measuring.
 #if !UA_PER_DAC_COUNT_CALIBRATED
 #error "Set UA_PER_DAC_COUNT to your measured value, then set UA_PER_DAC_COUNT_CALIBRATED to 1."
 #endif
@@ -43,7 +44,10 @@ const float UA_PER_DAC_COUNT =  0.000805;     // <-- your measured value (isn't 
 
 const int32_t HARD_MAX_UA = 3000;        // independent of whatever Unity sends
 const uint32_t WATCHDOG_MS = 200;        // no packet for this long -> output zero (Unity sends at 30-100 Hz)
-//const int32_t RAMP_UP_UA_PER_MS = 30;    // increases limited to 3 mA per 100 ms; decreases are instant
+
+
+const int32_t RAMP_VAL = 25; //max change of 25uA in 2.5 ms (aka 100uA in 10ms, matching Unity limits)
+const float POT_MIN = 0.1f;              // pot scale floor (fraction of full strength)
 
 //const int ledPin = 2; // Use the appropriate GPIO pin for your setup
 
@@ -51,9 +55,17 @@ const uint32_t WATCHDOG_MS = 200;        // no packet for this long -> output ze
 const int SDA_2 = 18;
 const int SCL_2 = 19;
 
+//ADC/Potentiometer Pin
+const int POT_PIN = 33;
+
 // MCP4725 is 12-bit
 const long DAC_MAX = 4095;
 const float DAC_VREF = 3.3;  // DAC supply voltage (used only for the printed estimate)
+
+const int   ADC_MAX     = 4095;  // 12-bit resolution
+const float ADC_REF_VOLT = 3.3;  // approximate; ESP32 ADC is not perfectly linear
+
+#define STATUS_TASK_PERIOD_MS 12   // ms
 
 // // Declare task handles
 // //TaskHandle_t BlinkTaskHandle = NULL;
@@ -84,6 +96,7 @@ class ServerCallbacks : public BLEServerCallbacks {
 
   void onDisconnect(BLEServer* s) {
     deviceConnected = false;
+    armed = false;   // a new connection must send START again
     // Tell the DAC task to zero NOW (it is the only one allowed to touch the DAC).
     GVSPacket stop = {};
     stop.command = CMD_STOP;
@@ -104,131 +117,160 @@ class DacCharCallbacks : public BLECharacteristicCallbacks {
     if (p.command > CMD_DATA || p.direction > 1 || p.amplitude < 0) { rejectCount++; return; }
 
     rxCount++;
+    if (p.command == CMD_START) armed = true;
+    else if (p.command == CMD_STOP) armed = false;
     xQueueOverwrite(cmdQueue, &p);
   }
 };
 
-static int last_dac_out = -1;
+static int last_dac_out = -1; // 0 - 4095
 static int lastDir = 0;
+static float last_pot = 1; // default unscaled
 
-static void writeHardware(int32_t unity_amp, uint8_t unity_dir) {
-  int dir = unity_dir > 0 ? 1 : -1;
-  int32_t sign_val = unity_amp * dir;
-  uint16_t dac_out = map(sign_val, -3000, 3000, 0, 4096);
+static int32_t prev_unity_amp = 0; //previous value actually sent from unity (scaled)
+static int32_t prev_actual_amp = 0; //previous/latest value (-3000 to 3000) used for DAC (aka ramp up/down) (scaled)
+static int32_t unity_amp = 0; //scaled target (newest value actually sent from unity)
+static uint8_t unity_dir = 0;
 
-  Serial.print("unity val: ");
-  Serial.print(unity_amp);
-  Serial.print(" signed: ");
-  Serial.print(sign_val);
-  Serial.print(" dac_out: ");
-  Serial.print(dac_out);
-  Serial.print(" dir: ");
-  Serial.println(unity_dir);
 
-  // // Never switch polarity while current is flowing: DAC to zero first, then the pin.
-  // if (dac_out > 0 && dir != lastDir) {
-  //   if (last_dac_out != 0) { 
-  //     dac.setVoltage(0, false); last_dac_out = 0; 
-  //   }
-  //   lastDir = dir;
-  // }
+void writeHardwareTask(void *parameter) {
+  // TickType_t lastWake = xTaskGetTickCount();
+  for (;;) {
+    int dir = unity_dir > 0 ? 1 : -1;
+    int32_t scaled_sign_val = (unity_amp + 0.5f) * dir; // -3000 to 3000 
 
-  if (dac_out != last_dac_out) {                // skip redundant I2C writes
-    dac.setVoltage(dac_out, false);
-    last_dac_out = dac_out;
-    lastDir = dir;
+    if (abs(scaled_sign_val - prev_actual_amp) > RAMP_VAL) {
+      if (scaled_sign_val < prev_actual_amp) {
+        scaled_sign_val = prev_actual_amp - RAMP_VAL;
+      } else {
+        scaled_sign_val = prev_actual_amp + RAMP_VAL;
+      }
+    }
+
+    prev_actual_amp = scaled_sign_val;
+
+    uint16_t dac_out = map(scaled_sign_val, -3000, 3000, 0, DAC_MAX);
+
+    // Serial.print("scaled unity val: ");
+    // Serial.print(unity_amp);
+    // Serial.print(" scaled signed val: ");
+    // Serial.print(scaled_sign_val );
+    // Serial.print(" dac_out: ");
+    // Serial.print(dac_out);
+    // Serial.print(" dir: ");
+    // Serial.println(unity_dir);
+
+    if (dac_out != last_dac_out) {                // skip redundant I2C writes
+      dac.setVoltage(dac_out, false);
+      last_dac_out = dac_out;
+      lastDir = dir;
+    }
+    // vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(2)); // apparently our print statements are holding back the task from finsihing every 2ms, so it never stops running.
+    vTaskDelay(pdMS_TO_TICKS(2)); // had to change to 2ms, since this func doesnt accept .5
   }
 }
 
-// static void applyOutput(int32_t target) {
-//   int32_t cur = output_uA;
-//   int32_t next;
-
-//   if ((cur > 0 && target < 0) || (cur < 0 && target > 0)) {
-//     next = 0;                                // polarity change: pass through zero first
-//   } else {
-//     next = target;
-//     // int32_t step = RAMP_UP_UA_PER_MS * elapsed;
-//     // next = cur + constrain(target - cur, -step, step);
-//   }
-
-//   writeHardware(next);
-//   outputCurr = next;
-// }
-
-
 // Reads a line from the Serial Monitor and sets the DAC to that value (0-4095)
-void DACTask(void *pvParameters) {
+void UnityReadTask (void *parameter) {
   GVSPacket p;
   int32_t target = 0;
 
   for(;;) { //infinite loop
     if (xQueueReceive(cmdQueue, &p, pdMS_TO_TICKS(WATCHDOG_MS)) == pdTRUE) {
       switch (p.command) {
-        case CMD_STOP:
-          armed = false;
+        case CMD_STOP:{
           target = 0;
           break;
-        case CMD_START:
-          armed = true;
+        }
+        case CMD_START:{
           target = 0;
           break;
-        case CMD_DATA: 
-          int32_t amp = p.amplitude;                       // copy out of the packed struct
+        }
+        case CMD_DATA:{
+          int32_t amp = armed ? p.amplitude : 0;                       // copy out of the packed struct
           target = amp < HARD_MAX_UA ? amp : HARD_MAX_UA;
-          //target = armed ? (p.direction ? a : -a) : 0;   // DATA before START is ignored
           break;
+        }
       }
     }
     else {
       // Watchdog: heartbeat lost. Zero now; stay armed so output resumes (ramped) when packets return.
-      if (output_uA != 0) {
+      if (output_uA != 0 || target != 0) {
         watchdogTrips++;
         target = 0;
       }
     }
     //applyOutput(target);
-    writeHardware(target, p.direction);
+    //writeHardware(target, p.direction);
+    prev_unity_amp = unity_amp;
+    unity_amp = target * last_pot; //scaled!
+    unity_dir = p.direction;
+
+    vTaskDelay(pdMS_TO_TICKS(5)); //5 ms
+
   }
+}
+
+void PotTask (void *parameter) {
+  for (;;) {
+    int pot_raw = analogRead(POT_PIN);
+    float pot_percent = pot_raw / (float)ADC_MAX;
+    if (pot_percent < POT_MIN) {
+      pot_percent = POT_MIN;
+    }
+
+    last_pot = pot_percent;
+
+    vTaskDelay(pdMS_TO_TICKS(10)); //10 ms
+  }
+
 }
 
 
 void StatusTask(void *parameter) {
   bool wasConnected = false;
   uint32_t lastRx = 0;
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  TickType_t lastWake = xTaskGetTickCount();
 
-  bool connected = deviceConnected;
-  if (connected != wasConnected) {
-    Serial.println(connected ? "Device connected" : "Device disconnected, advertising");
-    wasConnected = connected;
-  }
-  
   for(;;){
+    bool connected = deviceConnected;
+    if (connected != wasConnected) {
+      Serial.println(connected ? "Device connected" : "Device disconnected, advertising");
+      wasConnected = connected;
+    }
 
-    //if (!connected) continue;
-
-    //TODO: turn this into a packet
     float curr = (float)readCurrent_uA();
-    GVSPacket p;
-    p = {CMD_DATA, lastDir, 0, (int32_t)curr}; //maybe have issue w/ lastDir since it's updated in another task but idk
-    // struct __attribute__((packed)) GVSPacket {
-    //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
-    //   uint8_t direction;   // 0 / 1 polarity
-    //   int32_t frequency;   // currently unused (DC)
-    //   int32_t amplitude;   // microamps
-    // };
+    output_uA = curr;
 
-
-   // float curr = (float)readCurrent_uA();
-    pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
-    pSensorCharacteristic->notify();
+    if (connected){
+      float scaled_pot = last_pot * 100;
+      GVSPacket p;
+      p = {
+        CMD_DATA,                 //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
+        (uint8_t)(lastDir > 0 ? 1 : 0),  //   uint8_t direction;   // 0 / 1 polarity
+        (int32_t) scaled_pot,     //   int32_t frequency;   // currently unused (DC)
+        (int32_t) curr            //   int32_t amplitude;   // microamps
+      }; //maybe have issue w/ lastDir since it's updated in another task but idk
+      pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
+      pSensorCharacteristic->notify();
+    }
 
     uint32_t rx = rxCount;
-    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n",
+    // Serial.printf("rx %lu pkt/s | rejected %lu | wd trips %lu | armed %d | out %ld uA  | dir %d \n  |   pot strength %f %"),
     //               (unsigned long)(rx - lastRx), (unsigned long)rejectCount, (unsigned long)watchdogTrips,
-    //               (int)armed, (long)output_uA, (int)lastDir);
+    //               (int)armed, (long)output_uA, (int)lastDir, last_pot);
     lastRx = rx;
+
+    Serial.print("scaled unity val: ");
+    Serial.print(unity_amp);
+    Serial.print(" scaled signed val: ");
+    Serial.print(prev_actual_amp);
+    Serial.print(" dac_out: ");
+    Serial.print(last_dac_out);
+    Serial.print(" dir: ");
+    Serial.println(unity_dir);
+
+    vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(STATUS_TASK_PERIOD_MS));   // one pass every 12 ms
   }
 }
 
@@ -241,11 +283,16 @@ void setup() {
   //INA219 Current Sensor Setup
   ina219Init();
 
+  //ADC and Potentiometer Setup
+  analogReadResolution(12);  // 0-4095
+  pinMode(POT_PIN, INPUT);
+
   // MCP4725 External DAC Setup
   Wire1.begin(SDA_2, SCL_2);
   dac.begin(0x60, &Wire1);
-  dac.setVoltage(0, false);  // Start at 0V
-  last_dac_out = 0;
+  dac.setVoltage(DAC_ZERO, false);  // Start at 0V
+  last_dac_out = DAC_ZERO;
+  last_pot = 1;
 
   cmdQueue = xQueueCreate(1, sizeof(GVSPacket));
 
@@ -289,17 +336,36 @@ void setup() {
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
 
+  xTaskCreatePinnedToCore(
+    writeHardwareTask,         // Task function
+    "writeHardwareTask",       // Task name
+    10000,             // Stack size (bytes)
+    NULL,              // Parameters
+    4,                 // Priority
+    NULL,  // Task handle
+    1                  // Core 1 //double check this
+  );
 
   xTaskCreatePinnedToCore(
-    DACTask,         // Task function
-    "DACTask",       // Task name
+    UnityReadTask,         // Task function
+    "UnityReadTask",       // Task name
     10000,             // Stack size (bytes)
     NULL,              // Parameters
     3,                 // Priority
     NULL,  // Task handle
     1                  // Core 1 //double check this
   );
-  
+
+  xTaskCreatePinnedToCore(
+    PotTask,         // Task function
+    "PotTask",       // Task name
+    10000,             // Stack size (bytes)
+    NULL,              // Parameters
+    2,                 // Priority
+    NULL,  // Task handle
+    1                  // Core 1 //double check this
+  );
+
   xTaskCreatePinnedToCore(
     StatusTask,         // Task function
     "StatusTask",       // Task name
