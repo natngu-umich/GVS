@@ -86,9 +86,19 @@ public class GVSController : MonoBehaviour
     [Range(0, HardMaxAmplitudeMicroAmps)] public int maxAmplitudeMicroAmps = 3000;
     [Tooltip("Maximum rate of change of the commanded current (uA per second). Polarity reversals ramp through zero.")]
     public float slewRateMicroAmpsPerSec = 10000f;
+    [Tooltip("Largest change allowed between two consecutive packets (uA), whatever the send rate. 0 = no per-packet limit (only the per-second ramp applies).")]
+    public float maxStepPerPacketMicroAmps = 100f;
     [FormerlySerializedAs("defaultFrequencyMHz")]
     [Tooltip("Written verbatim to the packet's frequency field. The unit is whatever the ESP32 firmware defines (0 = DC).")]
     public int stimulationFrequency = 0;
+
+    [Header("Manual Test Input")]
+    [Tooltip("Ignore object motion and drive the signal from Manual Input instead (joystick script or this slider).")]
+    public bool manualMode = false;
+    [Tooltip("-1 = full left, +1 = full right. Multiplied by Max Expected Accel, then sent through the same deadzone, smoothing, ramp limit and cap as real motion.")]
+    [Range(-1f, 1f)] public float manualInput = 0f;
+    [Tooltip("Off: the input is the ear-to-ear acceleration directly. On: the input is a sideways acceleration of the rig, so turning the head changes the signal.")]
+    public bool manualRelativeToRig = false;
 
     [Header("Debug Telemetry (Read-Only)")]
     public float rawLateralAccel;
@@ -211,6 +221,7 @@ public class GVSController : MonoBehaviour
     private bool hasLastPosition;
     private bool hasLastVelocity;
     private bool hasLastRotation;
+    private bool wasManual;
 
     // =====================================================================
     // Unity lifecycle
@@ -225,6 +236,7 @@ public class GVSController : MonoBehaviour
         teleportSpeedThreshold = Mathf.Max(1f, teleportSpeedThreshold);
         maxYawRateDegPerSec = Mathf.Max(1f, maxYawRateDegPerSec);
         slewRateMicroAmpsPerSec = Mathf.Clamp(slewRateMicroAmpsPerSec, 500f, 100000f);
+        maxStepPerPacketMicroAmps = Mathf.Clamp(maxStepPerPacketMicroAmps, 0f, HardMaxAmplitudeMicroAmps);
     }
 
     void Start()
@@ -271,11 +283,29 @@ public class GVSController : MonoBehaviour
         isBleReady = isConnectedAndReady && !linkLost;
         CheckForHungWrite();
         ProcessReceivedPackets();
+
+        if (manualMode) StepManual();
+        else if (wasManual) { wasManual = false; ResetKinematicsState(); }
+    }
+
+    // Manual test input: skips the motion tracking, keeps everything after it.
+    private void StepManual()
+    {
+        float dt = Time.deltaTime;
+        if (dt <= 1e-6f) return; // paused: the sender ramps to zero when the target goes stale
+        wasManual = true;
+
+        float accel = Mathf.Clamp(manualInput, -1f, 1f) * maxExpectedAccel;
+        if (manualRelativeToRig && motionSource != null && headTransform != null)
+            accel *= Vector3.Dot(motionSource.right, headTransform.right);
+
+        rawLateralAccel = accel;
+        UpdateOutput(accel, dt);
     }
 
     void FixedUpdate()
     {
-        if (motionSource == null) return;
+        if (motionSource == null || manualMode) return;
         RefreshSamplingMode();
 
         float dt = Time.fixedDeltaTime;
@@ -300,7 +330,7 @@ public class GVSController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (motionSource == null || activeMode != SamplingMode.LateUpdatePosition) return;
+        if (motionSource == null || manualMode || activeMode != SamplingMode.LateUpdatePosition) return;
 
         float dt = Time.deltaTime;
         if (dt <= 1e-6f) return; // paused: stop publishing, the sender ramps to zero when stale
@@ -785,6 +815,8 @@ public class GVSController : MonoBehaviour
 
             // ---- Slew limit on the SIGNED value: polarity changes pass through zero ----
             float maxStep = Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt;
+            float perPacketCap = maxStepPerPacketMicroAmps;
+            if (perPacketCap > 0f) maxStep = Mathf.Min(maxStep, perPacketCap);
             slewed = Mathf.MoveTowards(slewed, target, maxStep);
 
             int amp = Mathf.Clamp(Mathf.RoundToInt(Mathf.Abs(slewed)), 0, HardMaxAmplitudeMicroAmps);

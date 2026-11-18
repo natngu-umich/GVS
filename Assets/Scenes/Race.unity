@@ -7400,24 +7400,52 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   motionSource: {fileID: 616618561}
   headTransform: {fileID: 1188525360}
+  samplingMode: 0
   targetDeviceName: ESP32-Brocoli
   deviceId: 
   serviceUuid: 19b10000-e8f2-537e-4f6c-d104768a1214
   notifyCharacteristicUuid: 19b10001-e8f2-537e-4f6c-d104768a1214
   characteristicUuid: 19b10002-e8f2-537e-4f6c-d104768a1214
+  targetMacAddress: 20:50:0d:d9:81:92
+  scanTimeoutSeconds: 8
   sendRateHz: 100
+  staleTimeoutMs: 100
+  linkLossFailureThreshold: 10
+  writeStallTimeoutMs: 10000
+  zeroOutputWhenUnfocused: 1
   accelDeadzone: 0.5
   maxExpectedAccel: 15
+  spikeRejectAccel: 50
+  teleportSpeedThreshold: 50
   useSmoothing: 1
   smoothingSpeed: 50
+  yawRateGain: 0
+  maxYawRateDegPerSec: 360
   invertDirection: 0
   maxAmplitudeMicroAmps: 3000
-  defaultFrequencyMHz: 0
+  slewRateMicroAmpsPerSec: 10000
+  maxStepPerPacketMicroAmps: 100
+  stimulationFrequency: 0
+  manualMode: 0
+  manualInput: 0
+  manualRelativeToRig: 0
   rawLateralAccel: 0
   smoothedLateralAccel: 0
+  targetAmplitudeSigned: 0
   currentOutputAmplitude: 0
   currentOutputDirection: 0
   isBleReady: 0
+  measuredSendRateHz: 0
+  consecutiveWriteFailures: 0
+  rejectedSpikes: 0
+  notificationsReceived: 0
+  lastReceivedPacket:
+    command: 0
+    direction: 0
+    frequency: 0
+    amplitude: 0
+  hasReceivedPacket: 0
+  logReceivedPackets: 1
 --- !u!1 &622192817
 GameObject:
   m_ObjectHideFlags: 0
