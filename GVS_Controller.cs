@@ -1,3 +1,5 @@
+// TODO: need to think of the frequncy being sent as perecent for the potentiometer. This will be a number between 0 and 100
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
