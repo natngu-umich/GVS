@@ -784,7 +784,7 @@ public class GVSController : MonoBehaviour
             target = Mathf.Clamp(target, -cap, cap);
 
             // ---- Slew limit on the SIGNED value: polarity changes pass through zero ----
-            float maxStep = Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt;
+            float maxStep = Mathf.Min(Mathf.Max(500f, slewRateMicroAmpsPerSec) * dt, 100f); // never more than 100 µA per packet
             slewed = Mathf.MoveTowards(slewed, target, maxStep);
 
             int amp = Mathf.Clamp(Mathf.RoundToInt(Mathf.Abs(slewed)), 0, HardMaxAmplitudeMicroAmps);
