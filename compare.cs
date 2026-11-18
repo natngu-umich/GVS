@@ -16,7 +16,8 @@ using Debug = UnityEngine.Debug;
 ///   * The sender transmits every tick (heartbeat), so a firmware watchdog can detect silence.
 ///   * If the motion target goes stale (pause, disabled object, hitch, lost focus) the sender
 ///     ramps the output to zero on its own.
-///   * Lost links are detected; output restarts from zero and START is re-sent on recovery.
+///   * Lost links (write failures, notification silence, hung native write) trigger a full BLE
+///     reset and a fresh scan; output restarts from zero and START is re-sent on reconnect.
 ///   * On shutdown a STOP is sent; the firmware must ALSO zero outputs on BLE disconnect.
 /// </summary>
 public class GVSController : MonoBehaviour
@@ -53,7 +54,10 @@ public class GVSController : MonoBehaviour
     public string characteristicUuid = "19b10002-e8f2-537e-4f6c-d104768a1214";
     [Tooltip("If set, ONLY a device whose ID ends with this MAC is accepted. Strongly recommended whenever more than one stimulator exists.")]
     public string targetMacAddress = "20:50:0d:d9:81:92";
+    [Tooltip("Length of one scan. If the device is not found, the BLE stack is fully reset and a new scan starts. Repeats until found.")]
     [Range(2f, 30f)] public float scanTimeoutSeconds = 8f;
+    [Tooltip("Once notifications have started arriving, silence for this long counts as a dropped link and triggers a reconnect. 0 = off (only failed writes detect a drop).")]
+    [Range(0f, 10f)] public float notifyTimeoutSeconds = 2f;
 
     [Header("Streaming")]
     [Tooltip("Packets per second. Every tick is sent (heartbeat), so the ESP32 watchdog can tell silence from 'no change'. Check Measured Send Rate Hz for what the link really achieves.")]
@@ -109,6 +113,8 @@ public class GVSController : MonoBehaviour
     public int currentOutputAmplitude;
     public byte currentOutputDirection;
     public bool isBleReady = false;
+    [Tooltip("Scanning / Connecting / Streaming / Reconnecting / Stopped / Failed")]
+    public string bleStatus = "Idle";
     public float measuredSendRateHz;
     public int consecutiveWriteFailures;
     public int rejectedSpikes;
@@ -199,8 +205,14 @@ public class GVSController : MonoBehaviour
     private int shutdownStarted = 0;
     private int senderGeneration = 0;
     private long writeInFlightSince = 0;   // Stopwatch ticks; 0 = no write in progress
-    private int abandonedSenders = 0;
-    private const int MaxAbandonedSenders = 3;
+    private long lastNotifyTicks = 0;      // Stopwatch ticks of the last notification; 0 = none yet this connection
+    private const int ReconnectDelayMs = 1000;
+
+    // Sender threads left blocked inside native SendData (known DLL hang). While any is still
+    // alive, native Quit() is not called.
+    private readonly object stuckLock = new object();
+    private readonly List<Thread> stuckWriters = new List<Thread>();
+    private const int MaxStuckWriters = 3;
 
     // Target handed from the main thread (producer) to the sender (consumer).
     private readonly object targetLock = new object();
@@ -281,7 +293,6 @@ public class GVSController : MonoBehaviour
     void Update()
     {
         isBleReady = isConnectedAndReady && !linkLost;
-        CheckForHungWrite();
         ProcessReceivedPackets();
 
         if (manualMode) StepManual();
@@ -557,7 +568,6 @@ public class GVSController : MonoBehaviour
         isRunning = true;
         isConnectedAndReady = false;
         linkLost = false;
-        abandonedSenders = 0;
         consecutiveWriteFailures = 0;
         connDeviceId = connServiceUuid = connCharUuid = null;
         outputEnabled = isActiveAndEnabled;
@@ -577,16 +587,10 @@ public class GVSController : MonoBehaviour
         return !string.IsNullOrEmpty(id) && id.Trim().ToLowerInvariant().EndsWith(normalizedMac, StringComparison.Ordinal);
     }
 
-    private string ScanForDevice(string mac)
+    private string ScanForDevice(string mac, int attempt)
     {
         string wantName = (targetDeviceName ?? "").Trim();
-        if (string.IsNullOrEmpty(mac) && string.IsNullOrEmpty(wantName))
-        {
-            Debug.LogError("[GVS] No deviceId, targetMacAddress or targetDeviceName set.");
-            return null;
-        }
-
-        Debug.Log("[GVS] Scanning for " + (!string.IsNullOrEmpty(mac) ? "MAC " + mac : "name '" + wantName + "'"));
+        Debug.Log("[GVS] Scanning for " + (!string.IsNullOrEmpty(mac) ? "MAC " + mac : "name '" + wantName + "'") + " (attempt " + attempt + ")");
 
         // Not disposed on purpose: a late callback from the scan thread must never hit a disposed handle.
         ManualResetEventSlim foundSignal = new ManualResetEventSlim(false);
@@ -616,100 +620,213 @@ public class GVSController : MonoBehaviour
         if (!isRunning) return null;
         string result = Volatile.Read(ref discoveredId);
         if (string.IsNullOrEmpty(result))
-            Debug.LogError("[GVS] Could not find device " + (!string.IsNullOrEmpty(mac) ? "with MAC " + mac : "named '" + wantName + "'") +
-                           " within " + scanTimeoutSeconds + " s.");
+            Debug.Log("[GVS] Device not found within " + scanTimeoutSeconds + " s. Resetting BLE and scanning again.");
         return result;
     }
 
+    // Connect thread. Runs until shutdown:
+    //   scan -> connect -> stream -> (link drops) -> full reset -> wait 1 s -> scan again ...
     private void BleConnectionRoutine()
     {
-        try
+        string mac = NormalizeMac(targetMacAddress);
+        string fixedId = (deviceId ?? "").Trim();
+
+        // Configuration errors will not fix themselves, so these stop instead of retrying.
+        if (fixedId.Length == 0 && mac.Length == 0 && (targetDeviceName ?? "").Trim().Length == 0)
         {
-            string mac = NormalizeMac(targetMacAddress);
-            string dev = (deviceId ?? "").Trim();
-
-            if (string.IsNullOrEmpty(dev))
-            {
-                dev = ScanForDevice(mac);
-                if (string.IsNullOrEmpty(dev)) return;
-                deviceId = dev;
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(mac) && !IdMatchesMac(dev, mac))
-                {
-                    Debug.LogError("[GVS] deviceId '" + dev + "' does not end with targetMacAddress '" + mac + "'. Refusing to connect to a possibly different stimulator.");
-                    return;
-                }
-                // No scan will run, so clear the DLL's quit flag left by a previous Editor Play session.
-                BLE.ResetNativeState();
-            }
-
-            if (!isRunning) return;
-
-            // Discover Services
-            List<string> services = BLE.ScanAndGetServices(dev);
-            string svc = MatchUuid(serviceUuid, services);
-            if (string.IsNullOrEmpty(svc))
-            {
-                Debug.LogError("[GVS] Service UUID not found: " + serviceUuid + " (found " + services.Count + " services). DLL: " + BLE.GetError());
-                return;
-            }
-
-            if (!isRunning) return;
-
-            // Discover Characteristics
-            Dictionary<string, string> charMap = BLE.ScanAndGetCharacteristics(dev, svc);
-            string writeChar = MatchUuid(characteristicUuid, charMap.Values);
-            if (string.IsNullOrEmpty(writeChar))
-            {
-                Debug.LogError("[GVS] Write characteristic not found: " + characteristicUuid + ". DLL: " + BLE.GetError());
-                return;
-            }
-            string notifyChar = MatchUuid(notifyCharacteristicUuid, charMap.Values);
-
-            // From here on, shutdown can address the device with a STOP even if later steps fail.
-            connDeviceId = dev;
-            connServiceUuid = svc;
-            connCharUuid = writeChar;
-
-            if (!isRunning) return;
-
-            if (!string.IsNullOrEmpty(notifyChar))
-            {
-                Debug.Log("[GVS] Subscribing to notify characteristic " + notifyChar);
-                if (!ble.Connect(dev, svc, new string[] { notifyChar }))
-                {
-                    Debug.LogError("[GVS] Subscribe to notify characteristic failed. DLL: " + BLE.GetError());
-                    return;
-                }
-                Thread.Sleep(200); // let the CCCD write settle before the handshake
-            }
-            else
-            {
-                Debug.LogWarning("[GVS] Notify characteristic " + notifyCharacteristicUuid + " not found; continuing without subscription.");
-            }
-
-            if (!isRunning) return;
-
-            // Handshake. Write-without-response: success means Windows queued it, not that the ESP32 got it.
-            if (!SendCommandWithRetry(new BLE.PacketWriter(dev, svc, writeChar), CMD_START, 3))
-            {
-                Debug.LogError("[GVS] START handshake write failed. DLL: " + BLE.GetError());
-                return;
-            }
-
-            if (!isRunning) return;
-
-            isConnectedAndReady = true;
-            Debug.Log("[GVS] Pipeline active. Streaming at up to " + sendRateHz + " Hz on a dedicated thread.");
-            StartSender(false);
+            Debug.LogError("[GVS] No deviceId, targetMacAddress or targetDeviceName set.");
+            bleStatus = "Failed";
+            return;
         }
-        catch (Exception e)
+        if (fixedId.Length > 0 && mac.Length > 0 && !IdMatchesMac(fixedId, mac))
         {
-            if (isRunning)
-                Debug.LogError("[GVS] BLE init exception: " + e.Message + ". DLL: " + BLE.GetError());
+            Debug.LogError("[GVS] deviceId '" + fixedId + "' does not end with targetMacAddress '" + mac + "'. Refusing to connect to a possibly different stimulator.");
+            bleStatus = "Failed";
+            return;
         }
+
+        for (int attempt = 1; isRunning; attempt++)
+        {
+            if (attempt > 1)
+            {
+                ResetBleStack();
+                if (shutdownEvent.Wait(ReconnectDelayMs)) break;
+            }
+
+            bool connected = false;
+            try { connected = TryConnect(mac, fixedId, attempt); }
+            catch (Exception e)
+            {
+                if (isRunning) Debug.LogWarning("[GVS] BLE connect exception: " + e.Message + ". DLL: " + BLE.GetError() + ". Retrying.");
+            }
+            if (!connected || !isRunning) continue;
+
+            attempt = 1; // the next scan after a drop is logged as attempt 2, 3, ...
+            StreamUntilLinkLost();
+
+            if (LiveStuckWriters() > MaxStuckWriters)
+            {
+                Debug.LogError("[GVS] Native BLE write hung " + MaxStuckWriters + "+ times. Streaming stopped; restart the app.");
+                bleStatus = "Failed";
+                return;
+            }
+        }
+        bleStatus = "Stopped";
+    }
+
+    // One connection attempt. Returns true once START has been queued.
+    private bool TryConnect(string mac, string fixedId, int attempt)
+    {
+        string dev = fixedId;
+        if (dev.Length == 0)
+        {
+            bleStatus = "Scanning";
+            dev = ScanForDevice(mac, attempt); // fresh scan every attempt; the found ID is not kept
+            if (string.IsNullOrEmpty(dev)) return false;
+        }
+        else
+        {
+            // No scan will run, so clear the DLL's quit flag (set by the previous reset or Editor Play session).
+            BLE.ResetNativeState();
+        }
+
+        if (!isRunning) return false;
+        bleStatus = "Connecting";
+
+        // Discover Services
+        List<string> services = BLE.ScanAndGetServices(dev);
+        string svc = MatchUuid(serviceUuid, services);
+        if (string.IsNullOrEmpty(svc))
+        {
+            Debug.LogWarning("[GVS] Service UUID not found: " + serviceUuid + " (found " + services.Count + " services). DLL: " + BLE.GetError() + ". Retrying.");
+            return false;
+        }
+
+        if (!isRunning) return false;
+
+        // Discover Characteristics
+        Dictionary<string, string> charMap = BLE.ScanAndGetCharacteristics(dev, svc);
+        string writeChar = MatchUuid(characteristicUuid, charMap.Values);
+        if (string.IsNullOrEmpty(writeChar))
+        {
+            Debug.LogWarning("[GVS] Write characteristic not found: " + characteristicUuid + ". DLL: " + BLE.GetError() + ". Retrying.");
+            return false;
+        }
+        string notifyChar = MatchUuid(notifyCharacteristicUuid, charMap.Values);
+
+        // From here on, shutdown can address the device with a STOP even if later steps fail.
+        connDeviceId = dev;
+        connServiceUuid = svc;
+        connCharUuid = writeChar;
+
+        if (!isRunning) return false;
+
+        if (!string.IsNullOrEmpty(notifyChar))
+        {
+            Debug.Log("[GVS] Subscribing to notify characteristic " + notifyChar);
+            if (!ble.Connect(dev, svc, new string[] { notifyChar }))
+            {
+                Debug.LogWarning("[GVS] Subscribe to notify characteristic failed. DLL: " + BLE.GetError() + ". Retrying.");
+                return false;
+            }
+            Thread.Sleep(200); // let the CCCD write settle before the handshake
+        }
+        else
+        {
+            Debug.LogWarning("[GVS] Notify characteristic " + notifyCharacteristicUuid + " not found; continuing without subscription.");
+        }
+
+        if (!isRunning) return false;
+
+        // Handshake. Write-without-response: success means Windows queued it, not that the ESP32 got it.
+        if (!SendCommandWithRetry(new BLE.PacketWriter(dev, svc, writeChar), CMD_START, 3))
+        {
+            Debug.LogWarning("[GVS] START handshake write failed. DLL: " + BLE.GetError() + ". Retrying.");
+            return false;
+        }
+
+        return isRunning;
+    }
+
+    // Runs the sender and watches the link from this (connect) thread until the link drops or
+    // the app shuts down. Then stops the sender and waits for it to leave native code.
+    private void StreamUntilLinkLost()
+    {
+        linkLost = false;
+        consecutiveWriteFailures = 0;
+        Interlocked.Exchange(ref lastNotifyTicks, 0); // the notification watchdog arms on the first notification
+        isConnectedAndReady = true;
+        bleStatus = "Streaming";
+        Debug.Log("[GVS] Pipeline active. Streaming at up to " + sendRateHz + " Hz on a dedicated thread.");
+        Thread sender = StartSender();
+        bool senderStuck = false;
+
+        while (isRunning && !linkLost)
+        {
+            if (shutdownEvent.Wait(100)) break;
+            long now = Stopwatch.GetTimestamp();
+
+            // Hung native write (known DLL issue). The thread is abandoned; it exits by itself if the call ever returns.
+            long since = Interlocked.Read(ref writeInFlightSince);
+            if (since != 0 && TicksToMs(now - since) > writeStallTimeoutMs)
+            {
+                Debug.LogError("[GVS] Native BLE write blocked for over " + writeStallTimeoutMs + " ms. Abandoning that sender and reconnecting.");
+                senderStuck = true;
+                linkLost = true;
+                break;
+            }
+
+            // Notification silence: the ESP32 dropped the link, rebooted, or Windows silently
+            // reconnected without our subscription. Only armed once notifications have arrived.
+            long lastRx = Interlocked.Read(ref lastNotifyTicks);
+            if (notifyTimeoutSeconds > 0f && lastRx != 0 && TicksToMs(now - lastRx) > notifyTimeoutSeconds * 1000.0)
+            {
+                Debug.LogWarning("[GVS] No notification from the ESP32 for " + notifyTimeoutSeconds + " s. Treating the link as dropped; reconnecting.");
+                linkLost = true;
+            }
+        }
+
+        // Stop the sender. Nothing may call native Quit() while it is still inside SendData.
+        isConnectedAndReady = false;
+        Interlocked.Increment(ref senderGeneration);
+        if (!senderStuck && !sender.Join(writeStallTimeoutMs)) senderStuck = true;
+        if (senderStuck) lock (stuckLock) stuckWriters.Add(sender);
+
+        currentOutputAmplitude = 0; // the ESP32 zeroes on disconnect / watchdog
+        if (isRunning) bleStatus = "Reconnecting";
+    }
+
+    // Full reset between attempts: native Quit() revokes the subscription and closes the DLL's
+    // cached device / service / characteristic objects, so the next attempt starts from scratch
+    // (the next scan or ResetNativeState() clears the quit flag Quit() leaves behind).
+    private void ResetBleStack()
+    {
+        isConnectedAndReady = false;
+        connDeviceId = connServiceUuid = connCharUuid = null;
+        BLE b = ble;
+        if (!isRunning || b == null) return; // shutting down: ShutdownBle() owns Quit()
+
+        if (LiveStuckWriters() > 0)
+        {
+            b.isConnected = false; // allow a fresh subscribe
+            Debug.LogWarning("[GVS] A native write is still blocked; skipping native Quit() (DLL cache not cleared) and rescanning anyway.");
+            return;
+        }
+        b.Close(); // isConnected = false + native Quit()
+    }
+
+    private int LiveStuckWriters()
+    {
+        lock (stuckLock)
+        {
+            stuckWriters.RemoveAll(t => !t.IsAlive);
+            return stuckWriters.Count;
+        }
+    }
+
+    private static double TicksToMs(long ticks)
+    {
+        return ticks * 1000.0 / Stopwatch.Frequency;
     }
 
     private bool SendCommandWithRetry(BLE.PacketWriter writer, byte command, int attempts)
@@ -724,10 +841,11 @@ public class GVSController : MonoBehaviour
         return false;
     }
 
-    private void StartSender(bool rearmFirst)
+    private Thread StartSender()
     {
+        Interlocked.Exchange(ref writeInFlightSince, 0); // an abandoned thread may have left this set
         int gen = Interlocked.Increment(ref senderGeneration);
-        Thread t = new Thread(() => BleSenderLoop(gen, rearmFirst))
+        Thread t = new Thread(() => BleSenderLoop(gen))
         {
             IsBackground = true,
             Name = "GVS BLE Sender #" + gen,
@@ -735,40 +853,15 @@ public class GVSController : MonoBehaviour
         };
         bleSenderThread = t;
         t.Start();
-    }
-
-    // Main thread. Recovers from the DLL's rare "SendData never returns" hang by abandoning
-    // the stuck thread (it exits on its own if the call ever returns) and starting a new one.
-    // While stuck, no packets flow, so the ESP32 watchdog zeroes the output.
-    private void CheckForHungWrite()
-    {
-        if (!isRunning || !isConnectedAndReady) return;
-        long since = Interlocked.Read(ref writeInFlightSince);
-        if (since == 0) return;
-
-        double ms = (Stopwatch.GetTimestamp() - since) * 1000.0 / Stopwatch.Frequency;
-        if (ms < writeStallTimeoutMs) return;
-
-        Interlocked.Exchange(ref writeInFlightSince, 0);
-        abandonedSenders++;
-        if (abandonedSenders > MaxAbandonedSenders)
-        {
-            Interlocked.Increment(ref senderGeneration);
-            isConnectedAndReady = false;
-            Debug.LogError("[GVS] Native BLE write hung again (" + abandonedSenders + " times). Streaming stopped; restart the app.");
-        }
-        else
-        {
-            Debug.LogError("[GVS] Native BLE write blocked for " + ms.ToString("F0") + " ms. Abandoning that sender thread and starting a new one.");
-            StartSender(true);
-        }
+        return t;
     }
 
     // =====================================================================
     // Sender thread
     // =====================================================================
 
-    private void BleSenderLoop(int myGen, bool rearmFirst)
+    // Exits when the link is lost; the connect thread then resets and rescans.
+    private void BleSenderLoop(int myGen)
     {
         BLE.PacketWriter writer = new BLE.PacketWriter(connDeviceId, connServiceUuid, connCharUuid);
         byte[] buf = new byte[GVSPacket.Size];
@@ -778,14 +871,12 @@ public class GVSController : MonoBehaviour
         long rateWindowStart = next;
         int sentInWindow = 0;
         int ticks = 0;
-        float slewed = 0f;          // signed uA actually commanded
-        bool needsArm = rearmFirst;
+        float slewed = 0f;          // signed uA actually commanded (each connection ramps up from zero)
 
-        while (isRunning && myGen == Volatile.Read(ref senderGeneration))
+        while (isRunning && !linkLost && myGen == Volatile.Read(ref senderGeneration))
         {
             // ---- Deadline scheduling (no drift; no burst after falling behind) ----
             float rate = Mathf.Clamp(sendRateHz, 20f, 100f);
-            if (linkLost) rate = 2f; // while the link is down, probe slowly
             long interval = (long)(freq / rate);
             next += interval;
             long now = Stopwatch.GetTimestamp();
@@ -798,7 +889,7 @@ public class GVSController : MonoBehaviour
             float dt = Mathf.Min((float)(now - lastTick) / freq, 0.05f);
             lastTick = now;
 
-            // ---- Target: zero when stale, disabled, paused, unfocused or link down ----
+            // ---- Target: zero when stale, disabled, paused or unfocused ----
             int target;
             long stamp;
             lock (targetLock)
@@ -808,7 +899,7 @@ public class GVSController : MonoBehaviour
             }
             bool stale = stamp == 0 || (now - stamp) * 1000 / freq > staleTimeoutMs;
             bool muted = !outputEnabled || appPaused || (zeroOutputWhenUnfocused && appUnfocused);
-            if (stale || muted || linkLost) target = 0;
+            if (stale || muted) target = 0;
 
             int cap = Mathf.Clamp(maxAmplitudeMicroAmps, 0, HardMaxAmplitudeMicroAmps);
             target = Mathf.Clamp(target, -cap, cap);
@@ -824,26 +915,12 @@ public class GVSController : MonoBehaviour
 
             try
             {
-                if (needsArm)
-                {
-                    // Re-arm after link recovery or sender replacement (the ESP32 may have rebooted).
-                    new GVSPacket { command = CMD_START }.WriteToBuffer(buf);
-                    if (TrackedWrite(writer, buf, myGen)) needsArm = false;
-                    else { OnWriteFailed(ref slewed); continue; }
-                }
-
                 new GVSPacket { command = CMD_DATA, direction = dir, frequency = stimulationFrequency, amplitude = amp }.WriteToBuffer(buf);
                 bool ok = TrackedWrite(writer, buf, myGen);
                 if (myGen != Volatile.Read(ref senderGeneration)) break; // abandoned while blocked
 
                 if (ok)
                 {
-                    if (linkLost)
-                    {
-                        linkLost = false;
-                        needsArm = true;
-                        Debug.Log("[GVS] BLE link recovered; re-arming.");
-                    }
                     consecutiveWriteFailures = 0;
                     currentOutputAmplitude = amp;
                     currentOutputDirection = dir;
@@ -851,13 +928,13 @@ public class GVSController : MonoBehaviour
                 }
                 else
                 {
-                    OnWriteFailed(ref slewed);
+                    OnWriteFailed();
                 }
             }
             catch (Exception ex)
             {
                 if (isRunning) Debug.LogWarning("[GVS] Write exception: " + ex.Message);
-                OnWriteFailed(ref slewed);
+                OnWriteFailed();
             }
 
             // ---- Drain incoming notifications (~10 Hz) so the DLL's queue can't grow forever ----
@@ -891,7 +968,7 @@ public class GVSController : MonoBehaviour
         }
     }
 
-    private void OnWriteFailed(ref float slewed)
+    private void OnWriteFailed()
     {
         consecutiveWriteFailures++;
         if (consecutiveWriteFailures == 1 && isRunning)
@@ -901,10 +978,9 @@ public class GVSController : MonoBehaviour
         }
         if (!linkLost && consecutiveWriteFailures >= linkLossFailureThreshold)
         {
-            linkLost = true;
-            slewed = 0f; // the ESP32 watchdog will have zeroed the output; restart the ramp from zero
+            linkLost = true; // the sender loop exits; the connect thread resets and rescans
             if (isRunning)
-                Debug.LogError("[GVS] BLE link LOST after " + consecutiveWriteFailures + " failed writes. Retrying at 2 Hz. DLL: " + BLE.GetError());
+                Debug.LogWarning("[GVS] BLE link LOST after " + consecutiveWriteFailures + " failed writes. Reconnecting. DLL: " + BLE.GetError());
         }
     }
 
@@ -916,6 +992,7 @@ public class GVSController : MonoBehaviour
     private void QueueReceived(byte[] buf, int len)
     {
         if (buf == null || len <= 0) return;
+        Interlocked.Exchange(ref lastNotifyTicks, Stopwatch.GetTimestamp()); // proof of life for the link watchdog
         byte[] copy = new byte[len];
         Buffer.BlockCopy(buf, 0, copy, 0, len);
         lock (rxLock)
@@ -1007,7 +1084,7 @@ public class GVSController : MonoBehaviour
         Thread sender = bleSenderThread;
         Thread connector = bleConnectThread;
         BLE.BLEScan scan = activeScan;
-        bool anyAbandoned = abandonedSenders > 0;
+        bleStatus = "Stopped";
 
         Thread teardown = new Thread(() =>
         {
@@ -1035,7 +1112,7 @@ public class GVSController : MonoBehaviour
 
                 if (connector != null && connector.IsAlive) connector.Join(500);
 
-                if (senderStopped && !anyAbandoned)
+                if (senderStopped && LiveStuckWriters() == 0)
                 {
                     Debug.Log("[GVS] Shutdown: calling native Quit()");
                     if (bleToClose != null) bleToClose.Close();
