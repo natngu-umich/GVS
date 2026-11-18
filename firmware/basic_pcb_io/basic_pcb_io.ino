@@ -13,7 +13,7 @@
 
 // ---------- Pin definitions ----------
 const int LED_PINS[4]    = {14, 13, 15, 16};
-const int BUTTON_PINS[1] = {23};
+const int BUTTON_PINS[2] = {23, 0};
 const int SWITCH_PINS[2] = {26, 27};
 const int POT_PIN        = 33;   // ADC1 pin, input-only (safe to use with WiFi)
 
@@ -55,7 +55,7 @@ void setup() {
   // MCP4725 External DAC Setup
   Wire1.begin(SDA_2, SCL_2);
   dac.begin(0x60, &Wire1);
-  dac.setVoltage(0, false);
+  dac.setVoltage(2048, false);
 
   // INA219 Current Sensor Setup
   ina219Init();
@@ -65,7 +65,7 @@ void setup() {
     digitalWrite(LED_PINS[i], LOW);
   }
 
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 2; i++) {
     pinMode(BUTTON_PINS[i], INPUT_PULLUP);
   }
   for (int i = 0; i < 2; i++) {
@@ -97,6 +97,7 @@ void loop() {
 
     // Inputs are active-low because of the internal pull-ups
     bool btn1       = (digitalRead(BUTTON_PINS[0]) == LOW);
+    bool btn2       = (digitalRead(BUTTON_PINS[1]) == LOW);
     bool sw1        = (digitalRead(SWITCH_PINS[0]) == LOW);
     bool sw2        = (digitalRead(SWITCH_PINS[1]) == LOW);
     float current   = (float) readCurrent_uA();
@@ -110,6 +111,7 @@ void loop() {
     Serial.println("------------------------------");
     Serial.printf("Active LED : %d (GPIO %d)\n", currentLed + 1, LED_PINS[currentLed]);
     Serial.printf("Button 1   : %s\n", btn1 ? "PRESSED" : "released");
+    Serial.printf("Button 2   : %s\n", btn2 ? "PRESSED" : "released");
     Serial.printf("Switch 1   : %s\n", sw1 ? "ON" : "OFF");
     Serial.printf("Switch 2   : %s\n", sw2 ? "ON" : "OFF");
     Serial.printf("Pot        : %d / %d  (%.1f%%, ~%.2f V)\n",
