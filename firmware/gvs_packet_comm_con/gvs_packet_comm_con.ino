@@ -3,6 +3,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <Wire.h>
+#include <esp_sleep.h>
 #include <Adafruit_MCP4725.h>
 #include <Adafruit_INA219.h>
 
@@ -57,6 +58,9 @@ const int SCL_2 = 19;
 
 //ADC/Potentiometer Pin
 const int POT_PIN = 33;
+const int BUTTON_PINS[2] = {23, 32}; //change 32 to be 0
+#define sleepButtonPin  GPIO_NUM_32 //change to be 0
+
 
 // MCP4725 is 12-bit
 const long DAC_MAX = 4095;
@@ -131,6 +135,104 @@ static volatile int32_t prev_unity_amp = 0; //previous value actually sent from 
 static volatile int32_t prev_actual_amp = 0; //previous/latest value (-3000 to 3000) used for DAC (aka ramp up/down) (scaled)
 static volatile int32_t unity_amp = 0; //scaled target (newest value actually sent from unity)
 static volatile uint8_t unity_dir = 0;
+
+SemaphoreHandle_t eStopSem = NULL;
+SemaphoreHandle_t sleepModeSem = NULL;
+
+void eStopISR(void) { //ISR for estop
+  dac.setVoltage(DAC_ZERO, false);
+  xSemaphoreGiveFromISR( eStopSem, NULL );
+}
+
+void sleepModeISR(void) { //ISR for sleep mode
+  dac.setVoltage(DAC_ZERO, false);
+   xSemaphoreGiveFromISR( sleepModeSem, NULL );
+}
+
+void eStopTask (void *parameter) {
+  for (;;) {
+    if( xSemaphoreTake( eStopSem, 0xffff ) == pdTRUE ) { //long wait, do we want this?      
+      GVSPacket p;
+      p = {
+        CMD_STOP,                 //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
+        (uint8_t)(0),  //   uint8_t direction;   // 0 / 1 polarity
+        (int32_t) 0,     //   int32_t frequency;   // currently unused (DC)
+        (int32_t) 0            //   int32_t amplitude;   // microamps
+      }; //maybe have issue w/ lastDir since it's updated in another task but idk
+      pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
+      pSensorCharacteristic->notify();
+
+      BLEDevice::stopAdvertising();
+
+      if (deviceConnected & pServer != nullptr) {
+        pServer->disconnect(pServer->getConnId());
+        deviceConnected = false;
+      }
+
+      BLEDevice::deinit(true);
+      pServer = nullptr;
+      pDACCharacteristic = nullptr;
+      pSensorCharacteristic = nullptr;
+
+
+      esp_deep_sleep_start(); //we are assuming that post eStop, we will have to power cycle the device
+    }
+  }
+}
+
+void sleepModeTask (void *parameter) {
+  for (;;) {
+    if( xSemaphoreTake( sleepModeSem, 0xffff ) == pdTRUE ) { //long wait, do we want this?
+      detachInterrupt(digitalPinToInterrupt(BUTTON_PINS[1])); 
+
+      //if it gets to this line and user hasn't let go of button, don't want to not do sleep mode
+      while (digitalRead(BUTTON_PINS[1]) == HIGH) {
+        //do nothing
+        vTaskDelay(pdMS_TO_TICKS(20));
+      }
+    
+
+      esp_sleep_enable_ext0_wakeup(sleepButtonPin, 1); //1 because high when pressed //////////////////////////change 32 to 0 for final code, doesn't like gpio_num
+
+
+      vTaskSuspendAll(); //maybe have some carve out for eStopTask? idk.... ......... 
+
+      //by this point, the button should be unpressed and can continue with sleep mode code
+      esp_light_sleep_start();
+
+      //goes to sleep, on next button press, should go back into this task
+      esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_EXT0); ////////////////////////////////////////////change from 32 to 0 in final code, doesn't like gpio_num
+
+      //if it gets to this line and user hasn't let go of button, don't want to not do sleep mode
+      while (digitalRead(BUTTON_PINS[1]) == HIGH) {
+        //do nothing
+        vTaskDelay(pdMS_TO_TICKS(20));
+      }
+      attachInterrupt(digitalPinToInterrupt(BUTTON_PINS[1]), sleepModeISR, RISING);
+
+      xTaskResumeAll();
+
+    }
+  }
+}
+
+
+/*
+      dac.setVoltage(DAC_ZERO, false);
+      
+      GVSPacket p;
+      p = {
+        CMD_STOP,                 //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
+        (uint8_t)(0),  //   uint8_t direction;   // 0 / 1 polarity
+        (int32_t) 0,     //   int32_t frequency;   // currently unused (DC)
+        (int32_t) 0            //   int32_t amplitude;   // microamps
+      }; //maybe have issue w/ lastDir since it's updated in another task but idk
+      pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
+      pSensorCharacteristic->notify();
+
+
+      esp_light_sleep_start(); //will pick up after returning
+*/
 
 
 void writeHardwareTask(void *parameter) {
@@ -259,7 +361,7 @@ void StatusTask(void *parameter) {
       Serial.print(" signed val: "); // scaled
       Serial.print(prev_actual_amp);
       Serial.print(" dac_out: "); Serial.print(last_dac_out);
-      Serial.print(" pot: ");  Serial.print(last_pot);
+      Serial.print(" scaled pot: ");  Serial.print(scaled_pot);
       Serial.print(" dir: "); Serial.println(unity_dir);
     }
 
@@ -285,6 +387,14 @@ void setup() {
   //ADC and Potentiometer Setup
   analogReadResolution(12);  // 0-4095
   pinMode(POT_PIN, INPUT);
+  pinMode(BUTTON_PINS[0], INPUT); //23
+  pinMode(BUTTON_PINS[1], INPUT); //32
+
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PINS[0]), eStopISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PINS[1]), sleepModeISR, RISING);
+
+  eStopSem = xSemaphoreCreateBinary();
+  sleepModeSem = xSemaphoreCreateBinary();
 
   // MCP4725 External DAC Setup
   Wire1.begin(SDA_2, SCL_2);
@@ -334,6 +444,26 @@ void setup() {
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
   Serial.println("Waiting a client connection to notify...");
+
+  xTaskCreatePinnedToCore(
+    eStopTask,
+    "eStopTask",
+    10000,
+    NULL,
+    5,
+    NULL,
+    1
+  );
+
+  xTaskCreatePinnedToCore(
+    sleepModeTask,
+    "sleepModeTask",
+    10000,
+    NULL,
+    5,
+    NULL,
+    1
+  );
 
   xTaskCreatePinnedToCore(
     writeHardwareTask,         // Task function
