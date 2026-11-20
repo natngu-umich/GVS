@@ -89,6 +89,7 @@ volatile bool deviceConnected = false;
 volatile bool armed = false;
 volatile int32_t output_uA = 0;
 volatile uint32_t rxCount = 0, rejectCount = 0, watchdogTrips = 0;
+volatile bool eStopping = false;
 
 
 class ServerCallbacks : public BLEServerCallbacks {
@@ -102,10 +103,13 @@ class ServerCallbacks : public BLEServerCallbacks {
     deviceConnected = false;
     armed = false;   // a new connection must send START again
     // Tell the DAC task to zero NOW (it is the only one allowed to touch the DAC).
+//    dac.setVoltage(DAC_ZERO, false);
     GVSPacket stop = {};
     stop.command = CMD_STOP;
     xQueueOverwrite(cmdQueue, &stop);
-    BLEDevice::startAdvertising();
+    if (!eStopping) {
+      BLEDevice::startAdvertising();
+    }
   }
 };
 
@@ -139,6 +143,21 @@ static volatile uint8_t unity_dir = 0;
 SemaphoreHandle_t eStopSem = NULL;
 SemaphoreHandle_t sleepModeSem = NULL;
 
+void print_wakeup_reason() {
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch (wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_EXT0:     Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1:     Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER:    Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD: Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP:      Serial.println("Wakeup caused by ULP program"); break;
+    default:                        Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason); break;
+  }
+}
+
 void eStopISR(void) { //ISR for estop
   dac.setVoltage(DAC_ZERO, false);
   xSemaphoreGiveFromISR( eStopSem, NULL );
@@ -146,12 +165,14 @@ void eStopISR(void) { //ISR for estop
 
 void sleepModeISR(void) { //ISR for sleep mode
   dac.setVoltage(DAC_ZERO, false);
-   xSemaphoreGiveFromISR( sleepModeSem, NULL );
+  xSemaphoreGiveFromISR( sleepModeSem, NULL );
 }
 
 void eStopTask (void *parameter) {
   for (;;) {
-    if( xSemaphoreTake( eStopSem, 0xffff ) == pdTRUE ) { //long wait, do we want this?      
+    if( xSemaphoreTake( eStopSem, ( TickType_t ) 10 ) == pdTRUE ) {      
+      dac.setVoltage(DAC_ZERO, false);
+      eStopping = true; 
       GVSPacket p;
       p = {
         CMD_STOP,                 //   uint8_t command;     // 0 = STOP, 1 = START, 2 = DATA
@@ -161,6 +182,8 @@ void eStopTask (void *parameter) {
       }; //maybe have issue w/ lastDir since it's updated in another task but idk
       pSensorCharacteristic->setValue((uint8_t *)&p, sizeof(GVSPacket));
       pSensorCharacteristic->notify();
+
+      vTaskSuspendAll();
 
       BLEDevice::stopAdvertising();
 
@@ -174,6 +197,10 @@ void eStopTask (void *parameter) {
       pDACCharacteristic = nullptr;
       pSensorCharacteristic = nullptr;
 
+      btStop();
+      // WiFi.disconnect(true);
+      // WiFi.mode(WIFI_OFF);
+      delay(60);
 
       esp_deep_sleep_start(); //we are assuming that post eStop, we will have to power cycle the device
     }
@@ -182,7 +209,8 @@ void eStopTask (void *parameter) {
 
 void sleepModeTask (void *parameter) {
   for (;;) {
-    if( xSemaphoreTake( sleepModeSem, 0xffff ) == pdTRUE ) { //long wait, do we want this?
+    if( xSemaphoreTake( sleepModeSem, ( TickType_t ) 10 ) == pdTRUE ) { 
+      dac.setVoltage(DAC_ZERO, false);
       detachInterrupt(digitalPinToInterrupt(BUTTON_PINS[1])); 
 
       //if it gets to this line and user hasn't let go of button, don't want to not do sleep mode
@@ -378,6 +406,9 @@ void StatusTask(void *parameter) {
 
 void setup() {
   // put your setup code here, to run once:
+  print_wakeup_reason(); //debugging deep sleep
+
+
   Serial.begin(115200);
   //pinMode(ledPin, OUTPUT);
 
